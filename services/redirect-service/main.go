@@ -17,8 +17,7 @@ var RedisClient = redis.NewClient(&redis.Options{
 func redirect(ctx *gin.Context) {
 	id := ctx.Param("id")
 
-	redisContext := context.Background()
-	redirectLink, error := RedisClient.Get(redisContext, id).Result()
+	redirectLink, error := RedisClient.Get(context.Background(), id).Result()
 	if error != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{"error": "Not Found"})
 		return

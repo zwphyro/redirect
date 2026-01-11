@@ -2,12 +2,18 @@ services:
 # TODO: setup auth or redis.conf
   redis:
     image: redis:8.2.3-alpine3.22
+    container_name: ${REDIS_CONTAINER_NAME}
+    env_file:
+      - .env
+    ports:
+      - "${REDIS_PORT}:6379"
+    command: >
+      redis-server
+      --requirepass "${REDIS_PASSWORD}"
     volumes:
       - redis_data:/data
-    ports:
-      - "6379:6379"
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       start_period: 5s
       interval: 5s
       timeout: 3s
@@ -16,7 +22,26 @@ services:
     networks:
       - default_network
 
+  postgres:
+    image: postgres:17.6-alpine3.22
+    container_name: ${POSTGRES_CONTAINER_NAME}
+    env_file:
+      - .env
+    ports:
+      - ${POSTGRES_PORT}:${POSTGRES_PORT}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-d", "${POSTGRES_DB}", "-U", "${POSTGRES_USER}", "-q"]
+      start_period: 5s
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - default_network
+
 volumes:
+  postgres_data:
   redis_data:
 
 networks:
