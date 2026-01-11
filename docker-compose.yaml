@@ -1,0 +1,24 @@
+services:
+# TODO: setup auth or redis.conf
+  redis:
+    image: redis:8.2.3-alpine3.22
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      start_period: 5s
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: always
+    networks:
+      - default_network
+
+volumes:
+  redis_data:
+
+networks:
+  default_network:
+    driver: bridge
