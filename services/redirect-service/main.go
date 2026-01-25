@@ -22,19 +22,19 @@ var (
 	RedirectGroup = singleflight.Group{}
 )
 
-type RedirectLink struct {
+type RedirectURL struct {
 	gorm.Model
-	Short string
-	Link  string
+	ShortCode   string
+	OriginalURL string
 }
 
 func Redirect(ctx *gin.Context) {
 	id := ctx.Param("id")
 
-	redirectLink, err := RedisClient.Get(context.Background(), id).Result()
+	redirectURL, err := RedisClient.Get(context.Background(), id).Result()
 
 	if err == nil {
-		ctx.Redirect(http.StatusFound, redirectLink)
+		ctx.Redirect(http.StatusFound, redirectURL)
 		return
 	}
 
