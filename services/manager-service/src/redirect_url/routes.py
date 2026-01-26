@@ -1,7 +1,6 @@
 from typing import Annotated
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 
-from src.redirect_url.exceptions import RedirectURLNotFoundException
 from src.redirect_url.schemas import CreateRedirectURLSchema, RedirectURLSchema
 
 from src.redirect_url.service import RedirectURLService
@@ -13,9 +12,13 @@ ServiceDependency = Annotated[RedirectURLService, Depends(RedirectURLService)]
 
 
 @router.get("/", response_model=list[RedirectURLSchema])
-async def list_redirects(service: ServiceDependency):
-    # TODO: add pagination
-    redirects = await service.list_redirects()
+async def list_redirects(
+    service: ServiceDependency,
+    limit: int | None = None,
+    offset: int | None = None,
+):
+    redirects = await service.list(limit=limit, offset=offset)
+
     return redirects
 
 
@@ -25,12 +28,7 @@ async def list_redirects(service: ServiceDependency):
     responses={status.HTTP_404_NOT_FOUND: {"model": HTTPExceptionSchema}},
 )
 async def get_redirect(short_code: str, service: ServiceDependency):
-    try:
-        redirect = await service.get_redirect(short_code)
-    except RedirectURLNotFoundException:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Redirect URL not found"
-        )
+    redirect = await service.get_redirect(short_code)
 
     # TODO: cache value
 
@@ -48,15 +46,13 @@ async def create_redirect(
     return redirect
 
 
-@router.delete("/{short_code}")
+@router.delete(
+    "/{short_code}",
+    responses={status.HTTP_404_NOT_FOUND: {"model": HTTPExceptionSchema}},
+)
 async def delete_redirect(short_code: str, service: ServiceDependency):
-    try:
-        redirect = await service.delete_redirect(short_code)
-    except RedirectURLNotFoundException:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Redirect URL not found"
-        )
+    redirect = await service.delete_redirect(short_code)
 
-    # TODO: update cache
+    # TODO: invalidate cache
 
     return redirect

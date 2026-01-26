@@ -5,4 +5,4 @@ class HTTPExceptionSchema(BaseModel):
     detail: str
 
     class Config:
-        json_schema_extra = {"example": {"detail": "Entity not found"}}
+        json_schema_extra = {"example": {"detail": "Error message"}}
