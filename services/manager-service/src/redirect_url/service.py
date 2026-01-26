@@ -1,61 +1,70 @@
-from sqlalchemy import select, delete
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
+from src.dependencies import DBDependency
 from src.redirect_url.exceptions import RedirectURLNotFoundException
 from src.redirect_url.models import RedirectURL
 
 from random import choice
 
 
-async def list_redirects(session: AsyncSession):
-    result = await session.execute(select(RedirectURL))
-    redirects = result.scalars().all()
-    return redirects
+class RedirectURLService:
+    def __init__(self, session: DBDependency):
+        self.session = session
 
+    async def list_redirects(self):
+        query = select(RedirectURL)
+        result = await self.session.execute(query)
 
-async def get_redirect(short_code: str, session: AsyncSession):
-    query = select(RedirectURL).where(RedirectURL.short_code == short_code)
-    result = await session.execute(query)
+        redirects = result.scalars().all()
+        return redirects
 
-    redirect = result.scalars().first()
+    async def get_redirect(self, short_code: str):
+        query = select(RedirectURL).where(RedirectURL.short_code == short_code)
+        result = await self.session.execute(query)
 
-    if redirect is None:
-        raise RedirectURLNotFoundException
+        redirect = result.scalars().first()
 
-    return redirect
+        if redirect is None:
+            raise RedirectURLNotFoundException
 
+        return redirect
 
-def generate_short_code():
-    code_length = 6
-    symbols = (
-        "".join(chr(code) for code in range(ord("a"), ord("z") + 1))
-        + "".join(chr(code) for code in range(ord("A"), ord("Z") + 1))
-        + "".join(chr(code) for code in range(ord("0"), ord("9") + 1))
-    )
+    async def create_redirect(self, original_url: str):
+        # TODO: improve short code generation and collision handling
+        while True:
+            try:
+                short_code = self._generate_short_code()
+                redirect = RedirectURL(short_code=short_code, original_url=original_url)
 
-    return "".join(choice(symbols) for _ in range(code_length))
+                self.session.add(redirect)
+                await self.session.commit()
 
+            except IntegrityError:
+                await self.session.rollback()
+                continue
 
-async def create_redirect(original_url: str, session: AsyncSession):
-    # TODO: solve collisions
-    short_code = generate_short_code()
-    redirect = RedirectURL(short_code=short_code, original_url=original_url)
+            return redirect
 
-    session.add(redirect)
-    await session.commit()
+    async def delete_redirect(self, short_code: str):
+        query = select(RedirectURL).where(RedirectURL.short_code == short_code)
+        result = await self.session.execute(query)
 
-    return redirect
+        redirect = result.scalars().first()
 
+        if redirect is None:
+            raise RedirectURLNotFoundException
 
-async def delete_redirect(short_code: str, session: AsyncSession):
-    query = select(RedirectURL).where(RedirectURL.short_code == short_code)
-    result = await session.execute(query)
+        await self.session.delete(redirect)
+        await self.session.commit()
 
-    redirect = result.scalars().first()
+        return redirect
 
-    if redirect is None:
-        raise RedirectURLNotFoundException
+    def _generate_short_code(self):
+        code_length = 6
+        symbols = (
+            "".join(chr(code) for code in range(ord("a"), ord("z") + 1))
+            + "".join(chr(code) for code in range(ord("A"), ord("Z") + 1))
+            + "".join(chr(code) for code in range(ord("0"), ord("9") + 1))
+        )
 
-    await session.delete(redirect)
-    await session.commit()
-
-    return redirect
+        return "".join(choice(symbols) for _ in range(code_length))

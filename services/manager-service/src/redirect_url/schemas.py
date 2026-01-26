@@ -3,6 +3,7 @@ from pydantic import BaseModel
 
 
 class RedirectURLSchema(BaseModel):
+    id: int
     short_code: str
     original_url: str
     is_active: bool

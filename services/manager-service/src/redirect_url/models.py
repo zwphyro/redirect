@@ -1,9 +1,6 @@
-from datetime import datetime
-
-from sqlalchemy import func
 from sqlalchemy.orm import Mapped, mapped_column
 
-from src.db import Base
+from src.db import Base, created_at, updated_at
 
 
 class RedirectURL(Base):
@@ -11,7 +8,5 @@ class RedirectURL(Base):
     original_url: Mapped[str] = mapped_column(nullable=False)
     is_active: Mapped[bool] = mapped_column(default=True)
 
-    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(
-        server_default=func.now(), onupdate=func.now()
-    )
+    created_at: Mapped[created_at]
+    updated_at: Mapped[updated_at]
