@@ -56,3 +56,16 @@ async def delete_redirect(short_code: str, service: ServiceDependency):
     # TODO: invalidate cache
 
     return redirect
+
+
+@router.put(
+    "/{id}",
+    response_model=RedirectURLSchema,
+    responses={status.HTTP_404_NOT_FOUND: {"model": HTTPExceptionSchema}},
+)
+async def toggle_is_active(id: int, service: ServiceDependency):
+    redirect = await service.toggle_is_active(id)
+
+    # TODO: invalidate cache
+
+    return redirect

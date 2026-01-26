@@ -51,6 +51,14 @@ class RedirectURLService:
 
         return redirect
 
+    async def toggle_is_active(self, id: int):
+        redirect = await self.session.get_one(RedirectURL, id)
+        redirect.is_active = not redirect.is_active
+
+        await self.session.commit()
+
+        return redirect
+
     def _generate_short_code(self):
         code_length = 6
         symbols = (
