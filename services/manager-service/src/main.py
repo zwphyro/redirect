@@ -1,4 +1,5 @@
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, status
+from fastapi.responses import JSONResponse
 from sqlalchemy.exc import NoResultFound
 
 from src.api import router
@@ -11,8 +12,9 @@ app = FastAPI(
 
 @app.exception_handler(NoResultFound)
 def not_found_exception_handler(*_):
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND, detail="Entity not found"
+    return JSONResponse(
+        status_code=status.HTTP_404_NOT_FOUND,
+        content={"detail": "Not found"},
     )
 
 

@@ -72,5 +72,5 @@ func main() {
 	app := gin.Default()
 	app.Use(TimeoutMiddleware(1 * time.Second))
 	app.GET("/:id", Redirect)
-	app.Run(":8080")
+	app.Run(":8001")
 }

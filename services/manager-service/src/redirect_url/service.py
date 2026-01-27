@@ -51,8 +51,11 @@ class RedirectURLService:
 
         return redirect
 
-    async def toggle_is_active(self, id: int):
-        redirect = await self.session.get_one(RedirectURL, id)
+    async def toggle_active(self, short_code: str):
+        query = select(RedirectURL).where(RedirectURL.short_code == short_code)
+        result = await self.session.execute(query)
+
+        redirect = result.scalars().one()
         redirect.is_active = not redirect.is_active
 
         await self.session.commit()
@@ -61,10 +64,10 @@ class RedirectURLService:
 
     def _generate_short_code(self):
         code_length = 6
-        symbols = (
-            "".join(chr(code) for code in range(ord("a"), ord("z") + 1))
-            + "".join(chr(code) for code in range(ord("A"), ord("Z") + 1))
-            + "".join(chr(code) for code in range(ord("0"), ord("9") + 1))
+
+        symbols = "".join(
+            "".join(chr(code) for code in range(ord(start), ord(end) + 1))
+            for start, end in [("a", "z"), ("A", "Z"), ("0", "9")]
         )
 
         return "".join(choice(symbols) for _ in range(code_length))

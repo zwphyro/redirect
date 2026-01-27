@@ -1,5 +1,5 @@
 from typing import Annotated
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 
 from src.redirect_url.schemas import CreateRedirectURLSchema, RedirectURLSchema
 
@@ -14,8 +14,8 @@ ServiceDependency = Annotated[RedirectURLService, Depends(RedirectURLService)]
 @router.get("/", response_model=list[RedirectURLSchema])
 async def list_redirects(
     service: ServiceDependency,
-    limit: int | None = None,
-    offset: int | None = None,
+    limit: int | None = Query(default=None, ge=1),
+    offset: int | None = Query(default=None, ge=0),
 ):
     redirects = await service.list(limit=limit, offset=offset)
 
@@ -48,6 +48,7 @@ async def create_redirect(
 
 @router.delete(
     "/{short_code}",
+    response_model=RedirectURLSchema,
     responses={status.HTTP_404_NOT_FOUND: {"model": HTTPExceptionSchema}},
 )
 async def delete_redirect(short_code: str, service: ServiceDependency):
@@ -59,12 +60,12 @@ async def delete_redirect(short_code: str, service: ServiceDependency):
 
 
 @router.put(
-    "/{id}",
+    "/active/{short_code}",
     response_model=RedirectURLSchema,
     responses={status.HTTP_404_NOT_FOUND: {"model": HTTPExceptionSchema}},
 )
-async def toggle_is_active(id: int, service: ServiceDependency):
-    redirect = await service.toggle_is_active(id)
+async def toggle_active(short_code: str, service: ServiceDependency):
+    redirect = await service.toggle_active(short_code)
 
     # TODO: invalidate cache
 
