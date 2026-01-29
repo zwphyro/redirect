@@ -1,8 +1,8 @@
 from fastapi import FastAPI, status
 from fastapi.responses import JSONResponse
-from sqlalchemy.exc import NoResultFound
 
 from src.api import router
+from src.exceptions import NotFoundException
 
 app = FastAPI(
     title="Redirect URLs Management API",
@@ -10,11 +10,12 @@ app = FastAPI(
 )
 
 
-@app.exception_handler(NoResultFound)
-def not_found_exception_handler(*_):
+@app.exception_handler(NotFoundException)
+def not_found_exception_handler(_, exception: NotFoundException):
+    print(exception)
     return JSONResponse(
         status_code=status.HTTP_404_NOT_FOUND,
-        content={"detail": "Not found"},
+        content={"detail": str(exception)},
     )
 
 

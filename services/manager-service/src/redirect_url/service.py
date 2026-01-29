@@ -1,6 +1,7 @@
 from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, NoResultFound
 from src.dependencies import DBDependency
+from src.exceptions import NotFoundException
 from src.redirect_url.models import RedirectURL
 
 from random import choice
@@ -21,7 +22,11 @@ class RedirectURLService:
         query = select(RedirectURL).where(RedirectURL.short_code == short_code)
         result = await self.session.execute(query)
 
-        redirect = result.scalars().one()
+        try:
+            redirect = result.scalars().one()
+        except NoResultFound:
+            raise NotFoundException("Redirect URL not found")
+
         return redirect
 
     async def create_redirect(self, original_url: str):
@@ -44,7 +49,10 @@ class RedirectURLService:
         query = select(RedirectURL).where(RedirectURL.short_code == short_code)
         result = await self.session.execute(query)
 
-        redirect = result.scalars().one()
+        try:
+            redirect = result.scalars().one()
+        except NoResultFound:
+            raise NotFoundException("Redirect URL not found")
 
         await self.session.delete(redirect)
         await self.session.commit()
@@ -55,7 +63,11 @@ class RedirectURLService:
         query = select(RedirectURL).where(RedirectURL.short_code == short_code)
         result = await self.session.execute(query)
 
-        redirect = result.scalars().one()
+        try:
+            redirect = result.scalars().one()
+        except NoResultFound:
+            raise NotFoundException("Redirect URL not found")
+
         redirect.is_active = not redirect.is_active
 
         await self.session.commit()
