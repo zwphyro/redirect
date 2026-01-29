@@ -39,6 +39,8 @@ func (RedirectURL) TableName() string {
 	return "redirecturls"
 }
 
+// --- Service ---
+
 func GetOriginalURL(shortCode string) (string, error) {
 	originalURL, err := RedisClient.Get(context.Background(), shortCode).Result()
 
@@ -72,6 +74,8 @@ func Redirect(ctx *gin.Context) {
 	shortCode := ctx.Param("short_code")
 
 	originalURL, err := GetOriginalURL(shortCode)
+
+	// TODO: write redirect info into RabbitMQ
 
 	if err == nil {
 		ctx.Redirect(http.StatusFound, originalURL)
