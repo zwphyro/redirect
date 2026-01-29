@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"time"
 
@@ -13,41 +14,59 @@ import (
 )
 
 var (
-	DB          *gorm.DB
+	DB *gorm.DB
+	// TODO: check on authentication
 	RedisClient = redis.NewClient(&redis.Options{
 		Addr:     "localhost:6379",
-		Password: "",
+		Password: "root",
 		DB:       0,
 	})
 	RedirectGroup = singleflight.Group{}
 )
 
 type RedirectURL struct {
-	gorm.Model
-	ShortCode   string
-	OriginalURL string
+	ShortCode   string `gorm:"column:short_code"`
+	OriginalURL string `gorm:"column:original_url"`
+}
+
+func (RedirectURL) TableName() string {
+	return "redirecturls"
 }
 
 func Redirect(ctx *gin.Context) {
-	id := ctx.Param("id")
+	shortCode := ctx.Param("short_code")
 
-	redirectURL, err := RedisClient.Get(context.Background(), id).Result()
+	originalURL, err := RedisClient.Get(context.Background(), shortCode).Result()
 
 	if err == nil {
-		ctx.Redirect(http.StatusFound, redirectURL)
+		ctx.Redirect(http.StatusFound, originalURL)
 		return
 	}
 
-	switch err {
-	case redis.Nil:
-		ctx.JSON(http.StatusNotFound, gin.H{"error": "Not Found"})
-		return
-	case context.DeadlineExceeded:
-		ctx.JSON(http.StatusRequestTimeout, gin.H{"error": "Request Timeout"})
+	if errors.Is(err, redis.Nil) {
+		var redirectURL RedirectURL
+		result := DB.Take(&redirectURL, "short_code = ?", shortCode)
+
+		if result.Error == nil {
+			ctx.Redirect(http.StatusFound, redirectURL.OriginalURL)
+			RedisClient.Set(context.Background(), shortCode, redirectURL.OriginalURL, 1*time.Minute)
+			return
+		}
+
+		switch {
+		case errors.Is(result.Error, gorm.ErrRecordNotFound):
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "Redirect URL not found"})
+			return
+		}
+	}
+
+	switch {
+	case errors.Is(err, context.DeadlineExceeded):
+		ctx.JSON(http.StatusRequestTimeout, gin.H{"error": "Request timeout"})
 		return
 	}
 
-	ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+	ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 }
 
 func TimeoutMiddleware(timeout time.Duration) gin.HandlerFunc {
@@ -71,6 +90,6 @@ func main() {
 
 	app := gin.Default()
 	app.Use(TimeoutMiddleware(1 * time.Second))
-	app.GET("/:id", Redirect)
+	app.GET("/:short_code", Redirect)
 	app.Run(":8001")
 }
