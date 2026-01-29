@@ -13,9 +13,13 @@ import (
 	"gorm.io/gorm"
 )
 
+// TODO: add logging
+
+// --- Singletons setups ---
+
 var (
 	DB *gorm.DB
-	// TODO: check on authentication
+	// TODO: check authentification error
 	RedisClient = redis.NewClient(&redis.Options{
 		Addr:     "localhost:6379",
 		Password: "root",
@@ -23,6 +27,8 @@ var (
 	})
 	RedirectGroup = singleflight.Group{}
 )
+
+// --- Models ---
 
 type RedirectURL struct {
 	ShortCode   string `gorm:"column:short_code"`
@@ -32,6 +38,8 @@ type RedirectURL struct {
 func (RedirectURL) TableName() string {
 	return "redirecturls"
 }
+
+// --- Routes/Views ---
 
 func Redirect(ctx *gin.Context) {
 	shortCode := ctx.Param("short_code")
@@ -44,17 +52,26 @@ func Redirect(ctx *gin.Context) {
 	}
 
 	if errors.Is(err, redis.Nil) {
-		var redirectURL RedirectURL
-		result := DB.Take(&redirectURL, "short_code = ?", shortCode)
+		result, err, _ := RedirectGroup.Do(shortCode, func() (any, error) {
+			var redirectURL RedirectURL
+			result := DB.Take(&redirectURL, "short_code = ?", shortCode)
 
-		if result.Error == nil {
-			ctx.Redirect(http.StatusFound, redirectURL.OriginalURL)
-			RedisClient.Set(context.Background(), shortCode, redirectURL.OriginalURL, 1*time.Minute)
+			if result.Error == nil {
+				RedisClient.Set(context.Background(), shortCode, redirectURL.OriginalURL, 1*time.Minute)
+			}
+
+			return redirectURL.OriginalURL, result.Error
+		})
+
+		originalURL = result.(string)
+
+		if err == nil {
+			ctx.Redirect(http.StatusFound, originalURL)
 			return
 		}
 
 		switch {
-		case errors.Is(result.Error, gorm.ErrRecordNotFound):
+		case errors.Is(err, gorm.ErrRecordNotFound):
 			ctx.JSON(http.StatusNotFound, gin.H{"error": "Redirect URL not found"})
 			return
 		}
@@ -69,6 +86,8 @@ func Redirect(ctx *gin.Context) {
 	ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 }
 
+// --- Middleware ---
+
 func TimeoutMiddleware(timeout time.Duration) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		timeoutContext, cancel := context.WithTimeout(ctx.Request.Context(), timeout)
@@ -80,7 +99,10 @@ func TimeoutMiddleware(timeout time.Duration) gin.HandlerFunc {
 	}
 }
 
+// --- Entrypoint ---
+
 func main() {
+	// # TODO: read values from .env config
 	dns := "host=localhost user=admin password=root dbname=redirect_db port=5432 sslmode=disable"
 	var err error
 	DB, err = gorm.Open(postgres.Open(dns), &gorm.Config{})
