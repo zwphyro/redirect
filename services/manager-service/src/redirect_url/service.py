@@ -6,6 +6,8 @@ from src.redirect_url.models import RedirectURL
 
 from random import choice
 
+# TODO: implement repository/dao to access database
+
 
 class RedirectURLService:
     def __init__(self, session: DBDependency):
