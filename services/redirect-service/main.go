@@ -39,47 +39,51 @@ func (RedirectURL) TableName() string {
 	return "redirecturls"
 }
 
+func GetOriginalURL(shortCode string) (string, error) {
+	originalURL, err := RedisClient.Get(context.Background(), shortCode).Result()
+
+	if err == nil {
+		return originalURL, nil
+	}
+
+	if !errors.Is(err, redis.Nil) {
+		return "", err
+	}
+
+	result, err, _ := RedirectGroup.Do(shortCode, func() (any, error) {
+		var redirectURL RedirectURL
+		result := DB.Take(&redirectURL, "short_code = ?", shortCode)
+
+		if result.Error == nil {
+			RedisClient.Set(context.Background(), shortCode, redirectURL.OriginalURL, 1*time.Minute)
+		}
+
+		return redirectURL.OriginalURL, result.Error
+	})
+
+	originalURL = result.(string)
+
+	return originalURL, err
+}
+
 // --- Routes/Views ---
 
 func Redirect(ctx *gin.Context) {
 	shortCode := ctx.Param("short_code")
 
-	originalURL, err := RedisClient.Get(context.Background(), shortCode).Result()
+	originalURL, err := GetOriginalURL(shortCode)
 
 	if err == nil {
 		ctx.Redirect(http.StatusFound, originalURL)
 		return
 	}
 
-	if errors.Is(err, redis.Nil) {
-		result, err, _ := RedirectGroup.Do(shortCode, func() (any, error) {
-			var redirectURL RedirectURL
-			result := DB.Take(&redirectURL, "short_code = ?", shortCode)
-
-			if result.Error == nil {
-				RedisClient.Set(context.Background(), shortCode, redirectURL.OriginalURL, 1*time.Minute)
-			}
-
-			return redirectURL.OriginalURL, result.Error
-		})
-
-		originalURL = result.(string)
-
-		if err == nil {
-			ctx.Redirect(http.StatusFound, originalURL)
-			return
-		}
-
-		switch {
-		case errors.Is(err, gorm.ErrRecordNotFound):
-			ctx.JSON(http.StatusNotFound, gin.H{"error": "Redirect URL not found"})
-			return
-		}
-	}
-
 	switch {
 	case errors.Is(err, context.DeadlineExceeded):
 		ctx.JSON(http.StatusRequestTimeout, gin.H{"error": "Request timeout"})
+		return
+	case errors.Is(err, gorm.ErrRecordNotFound):
+		ctx.JSON(http.StatusNotFound, gin.H{"error": "Redirect URL not found"})
 		return
 	}
 
