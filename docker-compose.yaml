@@ -36,12 +36,34 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+    restart: always
+    networks:
+      - default_network
+
+  rabbitmq:
+    image: rabbitmq:4.2.3-management-alpine
+    container_name: ${RABBITMQ_CONTAINER_NAME}
+    env_file:
+      - .env
+    ports:
+      - ${RABBITMQ_PORT}:5672
+      - ${RABBITMQ_MANAGEMENT_PORT}:15672
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      start_period: 5s
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: always
     networks:
       - default_network
 
 volumes:
   postgres_data:
   redis_data:
+  rabbitmq_data:
 
 networks:
   default_network:
