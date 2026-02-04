@@ -20,17 +20,17 @@ func NewRedirectRepository(db *gorm.DB, redis *redis.Client) *RedirectRepository
 	return &RedirectRepository{db: db, redis: redis}
 }
 
-func (r *RedirectRepository) GetFromCache(ctx context.Context, code string) (string, error) {
-	return r.redis.Get(ctx, code).Result()
+func (r *RedirectRepository) GetFromCache(ctx context.Context, shortCode string) (string, error) {
+	return r.redis.Get(ctx, shortCode).Result()
 }
 
-func (r *RedirectRepository) SetToCache(ctx context.Context, code string, url string, ttl time.Duration) error {
-	return r.redis.Set(ctx, code, url, ttl).Err()
+func (r *RedirectRepository) SetToCache(ctx context.Context, shortCode string, url string, ttl time.Duration) error {
+	return r.redis.Set(ctx, shortCode, url, ttl).Err()
 }
 
-func (r *RedirectRepository) GetFromDB(ctx context.Context, code string) (domain.RedirectURL, error) {
+func (r *RedirectRepository) GetFromDB(ctx context.Context, shortCode string) (domain.RedirectURL, error) {
 	var redirectURL domain.RedirectURL
-	result := r.db.WithContext(ctx).Take(&redirectURL, "short_code = ?", code)
+	result := r.db.WithContext(ctx).Take(&redirectURL, "short_code = ?", shortCode)
 	return redirectURL, result.Error
 }
 

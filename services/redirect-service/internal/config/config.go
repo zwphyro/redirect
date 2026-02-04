@@ -11,6 +11,7 @@ type Config struct {
 	HTTPServer HTTPServer
 	Postgres   Postgres
 	Redis      Redis
+	RabbitMQ   RabbitMQ
 }
 
 type HTTPServer struct {
@@ -33,12 +34,19 @@ type Redis struct {
 	DB       int    `env:"REDIS_DB" env-default:"0"`
 }
 
-func LoadConfig() *Config {
-	var cfg Config
+type RabbitMQ struct {
+	Host     string `env:"RABBITMQ_HOST" env-required:"true"`
+	Port     string `env:"RABBITMQ_PORT" env-required:"true"`
+	User     string `env:"RABBITMQ_DEFAULT_USER" env-required:"true"`
+	Password string `env:"RABBITMQ_DEFAULT_PASS" env-required:"true"`
+}
 
-	if err := cleanenv.ReadConfig("../../.env", &cfg); err != nil {
+func LoadConfig() *Config {
+	var config Config
+
+	if err := cleanenv.ReadConfig("../../.env", &config); err != nil {
 		log.Fatalf("cannot read config: %s", err)
 	}
 
-	return &cfg
+	return &config
 }
