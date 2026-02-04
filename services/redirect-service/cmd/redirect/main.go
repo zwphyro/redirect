@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 
 	"github.com/zwphyro/redirect/services/redirect-service/internal/broker"
@@ -12,10 +11,6 @@ import (
 	"github.com/zwphyro/redirect/services/redirect-service/internal/service"
 
 	"github.com/gin-gonic/gin"
-	amqp "github.com/rabbitmq/amqp091-go"
-	"github.com/redis/go-redis/v9"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 
 	"github.com/zwphyro/redirect/services/redirect-service/internal/config"
 )
@@ -23,54 +18,31 @@ import (
 func main() {
 	config := config.LoadConfig()
 
-	postgresDSN := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable",
-		config.Postgres.Host,
-		config.Postgres.User,
-		config.Postgres.Password,
-		config.Postgres.DBName,
-		config.Postgres.Port,
-	)
-
-	db, err := gorm.Open(postgres.Open(postgresDSN), &gorm.Config{})
+	db, err := repository.InitDB(config.Postgres)
 	if err != nil {
 		log.Fatalf("Failed to connect to DB: %v", err)
 	}
 
-	redisAddres := fmt.Sprintf("%s:%s", config.Redis.Host, config.Redis.Port)
-
-	redisClient := redis.NewClient(&redis.Options{
-		Addr:     redisAddres,
-		Password: config.Redis.Password,
-		DB:       config.Redis.DB,
-	})
-
+	redisClient := repository.InitRedis(config.Redis)
 	if _, err := redisClient.Ping(context.Background()).Result(); err != nil {
 		log.Fatalf("Failed to connect to Redis: %v", err)
 	}
 
 	redirectRepository := repository.NewRedirectRepository(db, redisClient)
 
-	rabbitMQURL := fmt.Sprintf("amqp://%s:%s@%s:%s/",
-		config.RabbitMQ.User,
-		config.RabbitMQ.Password,
-		config.RabbitMQ.Host,
-		config.RabbitMQ.Port,
-	)
-
-	rabbitMQConnection, err := amqp.Dial(rabbitMQURL)
+	rabbitMQConnection, err := broker.InitRabbitMQ(config.RabbitMQ)
 	if err != nil {
 		log.Fatalf("Failed to connect to RabbitMQ: %v", err)
 	}
-
 	defer rabbitMQConnection.Close()
 
-	rabbitMQProducer, err := broker.NewRabbitMQProducer(rabbitMQConnection)
+	redirectProducer, err := broker.NewRedirectProducer(rabbitMQConnection)
 	if err != nil {
 		log.Fatalf("Failed to create RabbitMQ producer: %v", err)
 	}
-	defer rabbitMQProducer.Close()
+	defer redirectProducer.Close()
 
-	redirectService := service.NewRedirectService(redirectRepository, rabbitMQProducer)
+	redirectService := service.NewRedirectService(redirectRepository, redirectProducer)
 	redirectHandler := handler.NewHandler(redirectService)
 
 	app := gin.Default()

@@ -3,12 +3,23 @@ package broker
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/google/uuid"
 	amqp "github.com/rabbitmq/amqp091-go"
+	"github.com/zwphyro/redirect/services/redirect-service/internal/config"
 )
 
-type RabbitMQProducer struct {
+func InitRabbitMQ(config config.RabbitMQ) (*amqp.Connection, error) {
+	return amqp.Dial(fmt.Sprintf("amqp://%s:%s@%s:%s/",
+		config.User,
+		config.Password,
+		config.Host,
+		config.Port,
+	))
+}
+
+type RedirectProducer struct {
 	connection  *amqp.Connection
 	channel     *amqp.Channel
 	celeryQueue amqp.Queue
@@ -23,7 +34,7 @@ type CeleryMessage struct {
 	Eta     any      `json:"eta"`
 }
 
-func NewRabbitMQProducer(connection *amqp.Connection) (*RabbitMQProducer, error) {
+func NewRedirectProducer(connection *amqp.Connection) (*RedirectProducer, error) {
 	channel, err := connection.Channel()
 	if err != nil {
 		return nil, err
@@ -41,14 +52,14 @@ func NewRabbitMQProducer(connection *amqp.Connection) (*RabbitMQProducer, error)
 		return nil, err
 	}
 
-	return &RabbitMQProducer{
+	return &RedirectProducer{
 		connection:  connection,
 		channel:     channel,
 		celeryQueue: queue,
 	}, nil
 }
 
-func (p *RabbitMQProducer) PublishRedirect(context context.Context, shortCode string) error {
+func (p *RedirectProducer) PublishRedirect(context context.Context, shortCode string) error {
 	task := CeleryMessage{
 		ID:     uuid.New().String(),
 		Task:   "task.store_redirect",
@@ -76,6 +87,6 @@ func (p *RabbitMQProducer) PublishRedirect(context context.Context, shortCode st
 	)
 }
 
-func (p *RabbitMQProducer) Close() error {
+func (p *RedirectProducer) Close() error {
 	return p.connection.Close()
 }

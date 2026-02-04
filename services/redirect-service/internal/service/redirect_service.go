@@ -4,19 +4,30 @@ import (
 	"context"
 	"time"
 
-	"github.com/zwphyro/redirect/services/redirect-service/internal/broker"
-	"github.com/zwphyro/redirect/services/redirect-service/internal/repository"
+	"github.com/zwphyro/redirect/services/redirect-service/internal/domain"
 
 	"golang.org/x/sync/singleflight"
 )
 
+type RedirectRepository interface {
+	GetFromCache(ctx context.Context, code string) (string, error)
+	SetToCache(ctx context.Context, code string, url string, ttl time.Duration) error
+	GetFromDB(ctx context.Context, code string) (domain.RedirectURL, error)
+	IsRedisNil(err error) bool
+}
+
+type RedirectBroker interface {
+	PublishRedirect(ctx context.Context, shortCode string) error
+	Close() error
+}
+
 type RedirectService struct {
-	repository    *repository.RedirectRepository
-	broker        *broker.RabbitMQProducer
+	repository    RedirectRepository
+	broker        RedirectBroker
 	redirectGroup singleflight.Group
 }
 
-func NewRedirectService(repository *repository.RedirectRepository, broker *broker.RabbitMQProducer) *RedirectService {
+func NewRedirectService(repository RedirectRepository, broker RedirectBroker) *RedirectService {
 	return &RedirectService{
 		repository: repository,
 		broker:     broker,
