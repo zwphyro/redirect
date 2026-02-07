@@ -59,11 +59,19 @@ func NewRedirectProducer(connection *amqp.Connection) (*RedirectProducer, error)
 	}, nil
 }
 
-func (p *RedirectProducer) PublishRedirect(context context.Context, shortCode string) error {
+func (p *RedirectProducer) PublishRedirect(
+	ctx context.Context,
+	timestamp int64,
+	shortCode string,
+	ip string,
+	userAgent string,
+	language string,
+	origin string,
+) error {
 	task := CeleryMessage{
 		ID:     uuid.New().String(),
 		Task:   "task.store_redirect",
-		Args:   []any{shortCode},
+		Args:   []any{timestamp, shortCode, ip, userAgent, language, origin},
 		Kwargs: struct{}{},
 	}
 
@@ -73,7 +81,7 @@ func (p *RedirectProducer) PublishRedirect(context context.Context, shortCode st
 	}
 
 	return p.channel.PublishWithContext(
-		context,
+		ctx,
 		"",
 		"celery",
 		false,

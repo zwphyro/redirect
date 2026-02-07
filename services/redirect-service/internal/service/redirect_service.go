@@ -16,30 +16,18 @@ type RedirectRepository interface {
 	IsRedisNil(err error) bool
 }
 
-type RedirectBroker interface {
-	PublishRedirect(ctx context.Context, shortCode string) error
-	Close() error
-}
-
 type RedirectService struct {
 	repository    RedirectRepository
-	broker        RedirectBroker
 	redirectGroup singleflight.Group
 }
 
-func NewRedirectService(repository RedirectRepository, broker RedirectBroker) *RedirectService {
-	return &RedirectService{
-		repository: repository,
-		broker:     broker,
-	}
+func NewRedirectService(repository RedirectRepository) *RedirectService {
+	return &RedirectService{repository: repository}
 }
 
 func (s *RedirectService) GetOriginalURL(ctx context.Context, shortCode string) (string, error) {
 	originalURL, err := s.repository.GetFromCache(ctx, shortCode)
 	if err == nil {
-		go func() {
-			_ = s.broker.PublishRedirect(ctx, shortCode)
-		}()
 		return originalURL, nil
 	}
 
@@ -61,10 +49,6 @@ func (s *RedirectService) GetOriginalURL(ctx context.Context, shortCode string) 
 	if err != nil {
 		return "", err
 	}
-
-	go func() {
-		_ = s.broker.PublishRedirect(ctx, shortCode)
-	}()
 
 	return result.(string), nil
 }

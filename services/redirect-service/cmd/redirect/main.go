@@ -42,12 +42,13 @@ func main() {
 	}
 	defer redirectProducer.Close()
 
-	redirectService := service.NewRedirectService(redirectRepository, redirectProducer)
-	redirectHandler := handler.NewHandler(redirectService)
+	redirectService := service.NewRedirectService(redirectRepository)
+	redirectHandler := handler.NewHandler(redirectService, redirectProducer)
 
 	app := gin.Default()
 
 	app.Use(middleware.Timeout(config.HTTPServer.Timeout))
+	app.Use(middleware.StartTime())
 
 	app.GET("/:short_code", redirectHandler.Redirect)
 
