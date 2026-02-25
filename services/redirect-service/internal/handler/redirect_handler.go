@@ -6,31 +6,19 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/zwphyro/redirect/services/redirect-service/internal/broker"
 	"github.com/zwphyro/redirect/services/redirect-service/internal/service"
 	"gorm.io/gorm"
 
 	"github.com/gin-gonic/gin"
 )
 
-type RedirectBroker interface {
-	PublishRedirect(
-		ctx context.Context,
-		timestamp int64,
-		shortCode string,
-		ip string,
-		userAgent string,
-		language string,
-		origin string,
-	) error
-	Close() error
-}
-
 type Handler struct {
 	service *service.RedirectService
-	broker  RedirectBroker
+	broker  *broker.RedirectProducer
 }
 
-func NewHandler(service *service.RedirectService, broker RedirectBroker) *Handler {
+func NewHandler(service *service.RedirectService, broker *broker.RedirectProducer) *Handler {
 	return &Handler{service: service, broker: broker}
 }
 
@@ -42,18 +30,23 @@ func (h *Handler) Redirect(ctx *gin.Context) {
 	if err == nil {
 		ctx.Redirect(http.StatusFound, originalURL)
 
-		ip := ctx.ClientIP()
-		userAgent := ctx.GetHeader("User-Agent")
-		language := ctx.GetHeader("Accept-Language")
-		origin := ctx.GetHeader("Origin")
-
-		var timestamp int64
-		if startTime, exsists := ctx.Get("startTime"); exsists {
-			timestamp = startTime.(time.Time).Unix()
+		var startTime time.Time
+		if t, exsists := ctx.Get("startTime"); !exsists {
+			startTime = t.(time.Time)
 		}
 
 		go func() {
-			h.broker.PublishRedirect(ctx.Request.Context(), timestamp, shortCode, ip, userAgent, language, origin)
+			h.broker.PublishRedirect(
+				ctx.Request.Context(),
+				broker.RedirectData{
+					Time:      startTime,
+					ShortCode: shortCode,
+					IP:        ctx.ClientIP(),
+					UserAgent: ctx.GetHeader("User-Agent"),
+					Language:  ctx.GetHeader("Accept-Language"),
+					Origin:    ctx.GetHeader("Origin"),
+				},
+			)
 		}()
 
 		return

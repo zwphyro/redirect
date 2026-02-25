@@ -27,11 +27,11 @@ func InitDB(config config.Postgres) (*gorm.DB, error) {
 }
 
 func InitRedis(config config.Redis) *redis.Client {
-  return redis.NewClient(&redis.Options{
-    Addr:     fmt.Sprintf("%s:%s", config.Host, config.Port),
-    Password: config.Password,
-    DB:       config.DB,
-  })
+	return redis.NewClient(&redis.Options{
+		Addr:     fmt.Sprintf("%s:%s", config.Host, config.Port),
+		Password: config.Password,
+		DB:       config.DB,
+	})
 }
 
 type RedirectRepository struct {
@@ -43,12 +43,16 @@ func NewRedirectRepository(db *gorm.DB, redis *redis.Client) *RedirectRepository
 	return &RedirectRepository{db: db, redis: redis}
 }
 
+func (r *RedirectRepository) ShortCodeKey(shortCode string) string {
+	return "short_code:" + shortCode
+}
+
 func (r *RedirectRepository) GetFromCache(ctx context.Context, shortCode string) (string, error) {
-	return r.redis.Get(ctx, shortCode).Result()
+	return r.redis.Get(ctx, r.ShortCodeKey(shortCode)).Result()
 }
 
 func (r *RedirectRepository) SetToCache(ctx context.Context, shortCode string, url string, ttl time.Duration) error {
-	return r.redis.Set(ctx, shortCode, url, ttl).Err()
+	return r.redis.Set(ctx, r.ShortCodeKey(shortCode), url, ttl).Err()
 }
 
 func (r *RedirectRepository) GetFromDB(ctx context.Context, shortCode string) (domain.RedirectURL, error) {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -23,6 +24,15 @@ type RedirectProducer struct {
 	connection  *amqp.Connection
 	channel     *amqp.Channel
 	celeryQueue amqp.Queue
+}
+
+type RedirectData struct {
+	Time      time.Time `json:"time"`
+	ShortCode string    `json:"short_code"`
+	IP        string    `json:"ip"`
+	UserAgent string    `json:"user_agent"`
+	Language  string    `json:"language"`
+	Origin    string    `json:"origin"`
 }
 
 type CeleryMessage struct {
@@ -61,17 +71,12 @@ func NewRedirectProducer(connection *amqp.Connection) (*RedirectProducer, error)
 
 func (p *RedirectProducer) PublishRedirect(
 	ctx context.Context,
-	timestamp int64,
-	shortCode string,
-	ip string,
-	userAgent string,
-	language string,
-	origin string,
+	data RedirectData,
 ) error {
 	task := CeleryMessage{
 		ID:     uuid.New().String(),
 		Task:   "task.store_redirect",
-		Args:   []any{timestamp, shortCode, ip, userAgent, language, origin},
+		Args:   []any{data},
 		Kwargs: struct{}{},
 	}
 
