@@ -5,7 +5,7 @@ import clickhouse_connect
 from src.schemas.redirect_data import RedirectDataSchema
 from src.settings import settings
 
-app = Celery("ConsumerService", broker="amqp://admin:root@localhost:5672//")
+app = Celery("ConsumerService", broker=settings.broker_url)
 
 client = clickhouse_connect.get_client(
     host=settings.ch_host,
