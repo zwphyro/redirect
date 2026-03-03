@@ -13,8 +13,8 @@ class Settings(BaseSettings):
 
     rabbitmq_host: str = Field(..., alias="RABBITMQ_HOST")
     rabbitmq_port: int = Field(..., alias="RABBITMQ_PORT")
-    rabbitmq_user: str = Field(..., alias="RABBITMQ_USER")
-    rabbitmq_password: str = Field(..., alias="RABBITMQ_PASSWORD")
+    rabbitmq_user: str = Field(..., alias="RABBITMQ_DEFAULT_USER")
+    rabbitmq_password: str = Field(..., alias="RABBITMQ_DEFAULT_PASS")
 
     @property
     def broker_url(self):

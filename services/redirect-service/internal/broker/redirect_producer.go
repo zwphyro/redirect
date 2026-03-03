@@ -74,9 +74,16 @@ func (p *RedirectProducer) PublishRedirect(
 	data RedirectData,
 ) error {
 	task := CeleryMessage{
-		ID:     uuid.New().String(),
-		Task:   "task.store_redirect",
-		Args:   []any{data},
+		ID:   uuid.New().String(),
+		Task: "task.store_redirect",
+		Args: []any{
+			data.Time,
+			data.ShortCode,
+			data.IP,
+			data.UserAgent,
+			data.Language,
+			data.Origin,
+		},
 		Kwargs: struct{}{},
 	}
 
