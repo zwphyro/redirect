@@ -36,12 +36,12 @@ type RedirectData struct {
 }
 
 type CeleryMessage struct {
-	ID      string   `json:"id"`
-	Task    string   `json:"task"`
-	Args    []any    `json:"args"`
-	Kwargs  struct{} `json:"kwargs"`
-	Retries int      `json:"retries"`
-	Eta     any      `json:"eta"`
+	ID      string       `json:"id"`
+	Task    string       `json:"task"`
+	Args    []any        `json:"args"`
+	Kwargs  RedirectData `json:"kwargs"`
+	Retries int          `json:"retries"`
+	Eta     any          `json:"eta"`
 }
 
 func NewRedirectProducer(connection *amqp.Connection) (*RedirectProducer, error) {
@@ -74,17 +74,10 @@ func (p *RedirectProducer) PublishRedirect(
 	data RedirectData,
 ) error {
 	task := CeleryMessage{
-		ID:   uuid.New().String(),
-		Task: "task.store_redirect",
-		Args: []any{
-			data.Time,
-			data.ShortCode,
-			data.IP,
-			data.UserAgent,
-			data.Language,
-			data.Origin,
-		},
-		Kwargs: struct{}{},
+		ID:     uuid.New().String(),
+		Task:   "task.store_redirect",
+		Args:   []any{},
+		Kwargs: data,
 	}
 
 	body, err := json.Marshal(task)

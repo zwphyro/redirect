@@ -1,6 +1,8 @@
 from celery import shared_task
 from celery_batches import Batches
 
+from src.store_redirect.schemas import BaseRedirectSchema
+
 
 @shared_task(
     base=Batches,
@@ -9,4 +11,7 @@ from celery_batches import Batches
     name="task.store_redirect",
 )
 def store_redirects(requests):
-    print(*[requset.args for requset in requests], sep="\n")
+    print(
+        *[BaseRedirectSchema.model_validate(requset.kwargs) for requset in requests],
+        sep="\n",
+    )
