@@ -31,7 +31,7 @@ func (h *Handler) Redirect(ctx *gin.Context) {
 		ctx.Redirect(http.StatusFound, originalURL)
 
 		var startTime time.Time
-		if t, exsists := ctx.Get("startTime"); !exsists {
+		if t, exsists := ctx.Get("startTime"); exsists {
 			startTime = t.(time.Time)
 		}
 
