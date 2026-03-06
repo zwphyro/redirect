@@ -14,35 +14,40 @@ class BaseRedirectSchema(BaseModel):
     origin: str
 
 
-class CompleteRedirectSchema(BaseModel):
+class RedirectSchema(BaseModel):
     event_date: date
     event_time: datetime
 
     short_code: str
 
     ip: str
-    continent_code: str
-    country_code: str
-    region_code: str
-    city: str
-    provider: str
-    lat: float
-    lon: float
+    continent_code: str | None
+    country_code: str | None
+    region_code: str | None
+    city: str | None
+    provider: str | None
+    lat: float | None
+    lon: float | None
 
-    browser: str
-    browser_version: str
-    os: str
-    os_version: str
-    device: str
-    device_brand: str
-    device_model: str
+    browser: str | None
+    browser_version: str | None
+    os: str | None
+    os_version: str | None
+    device: str | None
+    device_brand: str | None
+    device_model: str | None
 
-    language: str
+    language: str | None
 
-    origin: str
+    origin: str | None
 
     @classmethod
-    def from_base_models(cls, base_model: BaseRedirectSchema, ip_info: IPDataSchema, user_agent: UserAgentSchema):
+    def from_base_models(
+        cls,
+        base_model: BaseRedirectSchema,
+        user_agent: UserAgentSchema,
+        ip_info: IPDataSchema,
+    ):
         return cls(
             event_date=base_model.time.date(),
             event_time=base_model.time,
@@ -63,5 +68,5 @@ class CompleteRedirectSchema(BaseModel):
             device_brand=user_agent.device_brand,
             device_model=user_agent.device_model,
             language=user_agent.language,
-            origin=base_model.origin,
+            origin=base_model.origin or None,
         )

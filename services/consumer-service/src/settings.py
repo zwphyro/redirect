@@ -5,7 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    ch_name: str = Field(..., alias="CLICKHOUSE_DB")
+    ch_db_name: str = Field(..., alias="CLICKHOUSE_DB")
     ch_host: str = Field(..., alias="CLICKHOUSE_HOST")
     ch_port: int = Field(..., alias="CLICKHOUSE_PORT")
     ch_user: str = Field(..., alias="CLICKHOUSE_USER")
