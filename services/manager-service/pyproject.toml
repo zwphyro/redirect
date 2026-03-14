@@ -11,3 +11,29 @@ dependencies = [
     "pydantic-settings>=2.12.0",
     "sqlalchemy>=2.0.46",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+    "pytest-cov>=7.0.0",
+    "ruff>=0.15.6",
+    "taskipy>=1.14.1",
+]
+
+[tool.taskipy.tasks]
+start-app-dev = "uvicorn --reload src.main:app --host 0.0.0.0 --port 8000"
+start-app-prod = "uvicorn src.main:app --host 0.0.0.0 --port 8000"
+
+migrate-to-head = "alembic upgrade head"
+migrate-to = "alembic upgrade"
+migrate-downgrade-to = "alembic downgrade"
+migrate-revision = "alembic revision --autogenerate -m"
+migrate-check-current = "alembic current"
+migrate-check-history = "alembic history"
+
+lint = "ruff check src tests"
+lint-fix = "ruff check src tests --fix"
+test = "pytest tests"
+test-coverage = "pytest --cov=src tests && coverage html"
+
+list = "task --list"

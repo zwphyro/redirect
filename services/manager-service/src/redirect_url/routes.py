@@ -2,13 +2,26 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query, status
 
 from src.redirect_url.schemas import CreateRedirectURLSchema, RedirectURLSchema
-
 from src.redirect_url.service import RedirectURLService
+from src.redirect_url.short_code import ShortCodeGenerator
 from src.schemas import HTTPExceptionSchema
+from src.dependencies import UOWDependency
 
 router = APIRouter()
 
-ServiceDependency = Annotated[RedirectURLService, Depends(RedirectURLService)]
+
+def get_short_code_generator():
+    return ShortCodeGenerator(length=6)
+
+
+def get_redirect_url_service(
+    uow: UOWDependency,
+    short_code_generator: ShortCodeGenerator = Depends(get_short_code_generator),
+):
+    return RedirectURLService(uow, short_code_generator)
+
+
+ServiceDependency = Annotated[RedirectURLService, Depends(get_redirect_url_service)]
 
 
 @router.get("/", response_model=list[RedirectURLSchema])
