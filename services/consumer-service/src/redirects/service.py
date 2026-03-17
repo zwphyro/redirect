@@ -1,3 +1,5 @@
+from concurrent.futures import ThreadPoolExecutor
+
 from src.ip.service import IPService
 from src.redirects.repository import RedirectsRepository
 from src.redirects.schemas import BaseRedirectSchema, RedirectSchema
@@ -15,14 +17,23 @@ class RedirectService:
         self.ip_service = ip_service
         self.user_agent_service = user_agent_service
 
+    def _enrich_redirect(self, base_redirect: BaseRedirectSchema):
+        user_agent = self.user_agent_service.get_user_agent(
+            base_redirect.user_agent,
+            base_redirect.language,
+        )
+        ip_info = self.ip_service.get_ip_info(base_redirect.ip)
+        return base_redirect, user_agent, ip_info
+
     def _manage_redirects(self, base_redirects: list[BaseRedirectSchema]):
-        # TODO: add parallel ip data fetching
-        for base_redirect in base_redirects:
-            user_agent = self.user_agent_service.get_user_agent(
-                base_redirect.user_agent, base_redirect.language
-            )
-            ip_info = self.ip_service.get_ip_info(base_redirect.ip)
-            yield base_redirect, user_agent, ip_info
+        if not base_redirects:
+            return
+
+        max_workers = min(len(base_redirects), 5)
+
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            for result in executor.map(self._enrich_redirect, base_redirects):
+                yield result
 
     def store_redirects(self, base_redirects: list[BaseRedirectSchema]):
         redirects = [

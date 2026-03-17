@@ -8,9 +8,17 @@ class UserAgentService:
     def __init__(self):
         pass
 
-    def get_user_agent(self, user_agent: str, language: str):
-        ua = parse(user_agent)
-        language_tags = list(sorted(parse_accept_lang_header(language)))
+    def get_user_agent(self, user_agent: str, language: str) -> UserAgentSchema:
+        try:
+            ua = parse(user_agent)
+        except Exception:
+            ua = parse("")
+
+        try:
+            language_tags = list(sorted(parse_accept_lang_header(language)))
+        except Exception:
+            language_tags = []
+
         return UserAgentSchema(
             browser=ua.browser.family or None,
             browser_version=ua.browser.version_string or None,

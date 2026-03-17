@@ -16,6 +16,10 @@ class Settings(BaseSettings):
     rabbitmq_user: str = Field(..., alias="RABBITMQ_DEFAULT_USER")
     rabbitmq_password: str = Field(..., alias="RABBITMQ_DEFAULT_PASS")
 
+    ip_api_host: str = Field("http://ip-api.com", alias="IP_API_HOST")
+    ip_api_timeout_seconds: float = Field(2.0, alias="IP_API_TIMEOUT_SECONDS")
+    ip_api_max_retries: int = Field(3, alias="IP_API_MAX_RETRIES")
+
     @property
     def broker_url(self):
         return f"amqp://{self.rabbitmq_user}:{self.rabbitmq_password}@{self.rabbitmq_host}:{self.rabbitmq_port}//"

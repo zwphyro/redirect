@@ -1,21 +1,21 @@
 from celery import shared_task
 from celery_batches import Batches
 
-from src.redirects.dependencies import RedirectServiceMixin
+from src.redirects.dependencies import build_redirect_service
 from src.redirects.schemas import BaseRedirectSchema
 
 
-class StoreRedirectsTask(RedirectServiceMixin, Batches): ...
+redirect_service = build_redirect_service()
 
 
 @shared_task(
-    bind=True,
-    base=StoreRedirectsTask,
+    base=Batches,
     flush_every=5,
     flush_interval=60,
     name="src.redirects.task.store_redirects",
 )
-def store_redirects(self, requests):
-    self.service.store_redirects(
-        [BaseRedirectSchema.model_validate(requset.kwargs) for requset in requests]
-    )
+def store_redirects(requests):
+    base_redirects = [
+        BaseRedirectSchema.model_validate(request.kwargs) for request in requests
+    ]
+    redirect_service.store_redirects(base_redirects)

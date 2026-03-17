@@ -1,21 +1,14 @@
-def redirect_service_dependency(cls):
-    @property
-    def service(self):
-        if not hasattr(self, "_lazy_service"):
-            from src.ip.service import IPService
-            from src.redirects.repository import RedirectsRepository
-            from src.redirects.service import RedirectService
-            from src.user_agent.service import UserAgentService
-            from src.clickhouse import client
-
-            self._lazy_service = RedirectService(
-                RedirectsRepository(client), IPService(), UserAgentService()
-            )
-        return self._lazy_service
-
-    cls.service = service
-    return cls
+from src.clickhouse import get_clickhouse_client
+from src.ip.service import IPService
+from src.redirects.repository import RedirectsRepository
+from src.redirects.service import RedirectService
+from src.user_agent.service import UserAgentService
 
 
-@redirect_service_dependency
-class RedirectServiceMixin: ...
+def build_redirect_service() -> RedirectService:
+    client = get_clickhouse_client()
+    repository = RedirectsRepository(client)
+    ip_service = IPService()
+    user_agent_service = UserAgentService()
+
+    return RedirectService(repository, ip_service, user_agent_service)
