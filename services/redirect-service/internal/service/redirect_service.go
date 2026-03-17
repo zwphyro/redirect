@@ -12,7 +12,7 @@ import (
 type RedirectRepository interface {
 	GetFromCache(ctx context.Context, code string) (string, error)
 	SetToCache(ctx context.Context, code string, url string, ttl time.Duration) error
-	GetFromDB(ctx context.Context, code string) (domain.RedirectURL, error)
+	GetFromDB(ctx context.Context, code string) (domain.RedirectLink, error)
 	IsRedisNil(err error) bool
 }
 
@@ -25,10 +25,10 @@ func NewRedirectService(repository RedirectRepository) *RedirectService {
 	return &RedirectService{repository: repository}
 }
 
-func (s *RedirectService) GetOriginalURL(ctx context.Context, shortCode string) (string, error) {
-	originalURL, err := s.repository.GetFromCache(ctx, shortCode)
+func (s *RedirectService) GetTargetURL(ctx context.Context, shortCode string) (string, error) {
+	targetURL, err := s.repository.GetFromCache(ctx, shortCode)
 	if err == nil {
-		return originalURL, nil
+		return targetURL, nil
 	}
 
 	if !s.repository.IsRedisNil(err) {
@@ -36,14 +36,14 @@ func (s *RedirectService) GetOriginalURL(ctx context.Context, shortCode string) 
 	}
 
 	result, err, _ := s.redirectGroup.Do(shortCode, func() (any, error) {
-		redirectURL, err := s.repository.GetFromDB(ctx, shortCode)
+		redirectLink, err := s.repository.GetFromDB(ctx, shortCode)
 		if err != nil {
 			return "", err
 		}
 
-		_ = s.repository.SetToCache(context.Background(), shortCode, redirectURL.OriginalURL, 1*time.Minute)
+		_ = s.repository.SetToCache(context.Background(), shortCode, redirectLink.TargetURL, 1*time.Minute)
 
-		return redirectURL.OriginalURL, nil
+		return redirectLink.TargetURL, nil
 	})
 
 	if err != nil {

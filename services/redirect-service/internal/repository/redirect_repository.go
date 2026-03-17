@@ -55,10 +55,10 @@ func (r *RedirectRepository) SetToCache(ctx context.Context, shortCode string, u
 	return r.redis.Set(ctx, r.ShortCodeKey(shortCode), url, ttl).Err()
 }
 
-func (r *RedirectRepository) GetFromDB(ctx context.Context, shortCode string) (domain.RedirectURL, error) {
-	var redirectURL domain.RedirectURL
-	result := r.db.WithContext(ctx).Take(&redirectURL, "short_code = ?", shortCode)
-	return redirectURL, result.Error
+func (r *RedirectRepository) GetFromDB(ctx context.Context, shortCode string) (domain.RedirectLink, error) {
+	var redirectLink domain.RedirectLink
+	result := r.db.WithContext(ctx).Take(&redirectLink, "short_code = ?", shortCode)
+	return redirectLink, result.Error
 }
 
 func (r *RedirectRepository) IsRedisNil(err error) bool {

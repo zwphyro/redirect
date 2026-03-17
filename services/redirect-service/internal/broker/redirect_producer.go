@@ -27,7 +27,7 @@ type RedirectProducer struct {
 }
 
 type RedirectData struct {
-	Time      time.Time `json:"time"`
+	EventTime time.Time `json:"event_time"`
 	ShortCode string    `json:"short_code"`
 	IP        string    `json:"ip"`
 	UserAgent string    `json:"user_agent"`
@@ -75,7 +75,7 @@ func (p *RedirectProducer) PublishRedirect(
 ) error {
 	task := CeleryMessage{
 		ID:     uuid.New().String(),
-		Task:   "src.redirects.task.store_redirects",
+		Task:   "src.redirect_events.task.store_redirect_events",
 		Args:   []any{},
 		Kwargs: data,
 	}

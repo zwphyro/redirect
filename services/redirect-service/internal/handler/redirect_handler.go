@@ -28,10 +28,10 @@ func NewHandler(redirectService *service.RedirectService, analyticsService *serv
 func (h *Handler) Redirect(ctx *gin.Context) {
 	shortCode := ctx.Param("short_code")
 
-	originalURL, err := h.redirectService.GetOriginalURL(ctx.Request.Context(), shortCode)
+	targetURL, err := h.redirectService.GetTargetURL(ctx.Request.Context(), shortCode)
 
 	if err == nil {
-		ctx.Redirect(http.StatusFound, originalURL)
+		ctx.Redirect(http.StatusFound, targetURL)
 
 		var startTime time.Time
 		if t, exsists := ctx.Get("startTime"); exsists {
@@ -39,7 +39,7 @@ func (h *Handler) Redirect(ctx *gin.Context) {
 		}
 
 		event := broker.RedirectData{
-			Time:      startTime,
+			EventTime: startTime,
 			ShortCode: shortCode,
 			IP:        ctx.ClientIP(),
 			UserAgent: ctx.GetHeader("User-Agent"),
@@ -55,7 +55,7 @@ func (h *Handler) Redirect(ctx *gin.Context) {
 	switch {
 	// TODO: add custom errors
 	case errors.Is(err, gorm.ErrRecordNotFound):
-		ctx.JSON(http.StatusNotFound, gin.H{"error": "Redirect URL not found"})
+		ctx.JSON(http.StatusNotFound, gin.H{"error": "Redirect link not found"})
 	case errors.Is(err, context.DeadlineExceeded):
 		ctx.JSON(http.StatusRequestTimeout, gin.H{"error": "Request timeout"})
 	default:
