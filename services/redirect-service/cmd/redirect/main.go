@@ -43,7 +43,8 @@ func main() {
 	defer redirectProducer.Close()
 
 	redirectService := service.NewRedirectService(redirectRepository)
-	redirectHandler := handler.NewHandler(redirectService, redirectProducer)
+	analyticsService := service.NewAnalyticsService(redirectProducer)
+	redirectHandler := handler.NewHandler(redirectService, analyticsService)
 
 	app := gin.Default()
 

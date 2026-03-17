@@ -6,5 +6,5 @@ type RedirectURL struct {
 }
 
 func (RedirectURL) TableName() string {
-	return "redirecturls"
+	return "redirect_urls"
 }

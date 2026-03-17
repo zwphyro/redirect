@@ -14,18 +14,21 @@ import (
 )
 
 type Handler struct {
-	service *service.RedirectService
-	broker  *broker.RedirectProducer
+	redirectService  *service.RedirectService
+	analyticsService *service.AnalyticsService
 }
 
-func NewHandler(service *service.RedirectService, broker *broker.RedirectProducer) *Handler {
-	return &Handler{service: service, broker: broker}
+func NewHandler(redirectService *service.RedirectService, analyticsService *service.AnalyticsService) *Handler {
+	return &Handler{
+		redirectService:  redirectService,
+		analyticsService: analyticsService,
+	}
 }
 
 func (h *Handler) Redirect(ctx *gin.Context) {
 	shortCode := ctx.Param("short_code")
 
-	originalURL, err := h.service.GetOriginalURL(ctx.Request.Context(), shortCode)
+	originalURL, err := h.redirectService.GetOriginalURL(ctx.Request.Context(), shortCode)
 
 	if err == nil {
 		ctx.Redirect(http.StatusFound, originalURL)
@@ -35,19 +38,16 @@ func (h *Handler) Redirect(ctx *gin.Context) {
 			startTime = t.(time.Time)
 		}
 
-		go func() {
-			h.broker.PublishRedirect(
-				ctx.Request.Context(),
-				broker.RedirectData{
-					Time:      startTime,
-					ShortCode: shortCode,
-					IP:        ctx.ClientIP(),
-					UserAgent: ctx.GetHeader("User-Agent"),
-					Language:  ctx.GetHeader("Accept-Language"),
-					Origin:    ctx.GetHeader("Origin"),
-				},
-			)
-		}()
+		event := broker.RedirectData{
+			Time:      startTime,
+			ShortCode: shortCode,
+			IP:        ctx.ClientIP(),
+			UserAgent: ctx.GetHeader("User-Agent"),
+			Language:  ctx.GetHeader("Accept-Language"),
+			Origin:    ctx.GetHeader("Origin"),
+		}
+
+		go h.analyticsService.PublishRedirectEvent(event)
 
 		return
 	}
