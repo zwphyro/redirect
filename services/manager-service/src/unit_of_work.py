@@ -4,7 +4,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.exceptions import DatabaseError
-from src.redirect_url.repository import RedirectURLRepository
+from src.redirect_link.repository import RedirectLinkRepository
 
 
 class UnitOfWork:
@@ -13,7 +13,7 @@ class UnitOfWork:
 
     async def __aenter__(self):
         self._session = self._session_pool()
-        self.redirect_url = RedirectURLRepository(self._session)
+        self.redirect_link = RedirectLinkRepository(self._session)
         return self
 
     async def __aexit__(

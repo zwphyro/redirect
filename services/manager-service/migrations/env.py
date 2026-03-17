@@ -6,11 +6,8 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
-
-from src.db import Base
+from src.models import Base
 from src.settings import settings
-
-from src.redirect_url.models import RedirectURL  # type: ignore[no-unused-import] # NOQA: F401
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

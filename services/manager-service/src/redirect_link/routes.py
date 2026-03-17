@@ -1,9 +1,9 @@
 from typing import Annotated
 from fastapi import APIRouter, Depends, Query, status
 
-from src.redirect_url.schemas import CreateRedirectURLSchema, RedirectURLSchema
-from src.redirect_url.service import RedirectURLService
-from src.redirect_url.short_code import ShortCodeGenerator
+from src.redirect_link.schemas import CreateRedirectLinkSchema, RedirectLinkSchema
+from src.redirect_link.service import RedirectLinkService
+from src.redirect_link.short_code import ShortCodeGenerator
 from src.schemas import HTTPExceptionSchema
 from src.dependencies import UOWDependency
 
@@ -14,18 +14,18 @@ def get_short_code_generator():
     return ShortCodeGenerator(length=6)
 
 
-def get_redirect_url_service(
+def get_redirect_link_service(
     uow: UOWDependency,
     short_code_generator: ShortCodeGenerator = Depends(get_short_code_generator),
 ):
-    return RedirectURLService(uow, short_code_generator)
+    return RedirectLinkService(uow, short_code_generator)
 
 
-ServiceDependency = Annotated[RedirectURLService, Depends(get_redirect_url_service)]
+ServiceDependency = Annotated[RedirectLinkService, Depends(get_redirect_link_service)]
 
 
-@router.get("/", response_model=list[RedirectURLSchema])
-async def list_redirects(
+@router.get("/", response_model=list[RedirectLinkSchema])
+async def list_links(
     service: ServiceDependency,
     limit: int | None = Query(default=None, ge=1),
     offset: int | None = Query(default=None, ge=0),
@@ -37,22 +37,20 @@ async def list_redirects(
 
 @router.get(
     "/{short_code}",
-    response_model=RedirectURLSchema,
+    response_model=RedirectLinkSchema,
     responses={status.HTTP_404_NOT_FOUND: {"model": HTTPExceptionSchema}},
 )
-async def get_redirect(short_code: str, service: ServiceDependency):
-    redirect = await service.get_redirect(short_code)
+async def get_link(short_code: str, service: ServiceDependency):
+    redirect = await service.get_link(short_code)
 
     # TODO: cache value
 
     return redirect
 
 
-@router.post("/", response_model=RedirectURLSchema)
-async def create_redirect(
-    new_redirect: CreateRedirectURLSchema, service: ServiceDependency
-):
-    redirect = await service.create_redirect(new_redirect.original_url)
+@router.post("/", response_model=RedirectLinkSchema)
+async def create_link(new_link: CreateRedirectLinkSchema, service: ServiceDependency):
+    redirect = await service.create_link(new_link.target_url)
 
     # TODO: cache value
 
@@ -61,11 +59,11 @@ async def create_redirect(
 
 @router.delete(
     "/{short_code}",
-    response_model=RedirectURLSchema,
+    response_model=RedirectLinkSchema,
     responses={status.HTTP_404_NOT_FOUND: {"model": HTTPExceptionSchema}},
 )
-async def delete_redirect(short_code: str, service: ServiceDependency):
-    redirect = await service.delete_redirect(short_code)
+async def delete_link(short_code: str, service: ServiceDependency):
+    redirect = await service.delete_link(short_code)
 
     # TODO: invalidate cache
 
@@ -74,7 +72,7 @@ async def delete_redirect(short_code: str, service: ServiceDependency):
 
 @router.put(
     "/active/{short_code}",
-    response_model=RedirectURLSchema,
+    response_model=RedirectLinkSchema,
     responses={status.HTTP_404_NOT_FOUND: {"model": HTTPExceptionSchema}},
 )
 async def toggle_active(short_code: str, service: ServiceDependency):
