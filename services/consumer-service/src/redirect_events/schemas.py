@@ -5,8 +5,8 @@ from src.ip.schemas import IPDataSchema
 from src.user_agent.schemas import UserAgentSchema
 
 
-class BaseRedirectSchema(BaseModel):
-    time: datetime
+class BaseRedirectEventSchema(BaseModel):
+    event_time: datetime
     short_code: str
     ip: str
     user_agent: str
@@ -14,7 +14,7 @@ class BaseRedirectSchema(BaseModel):
     origin: str
 
 
-class RedirectSchema(BaseModel):
+class RedirectEventSchema(BaseModel):
     event_date: date
     event_time: datetime
 
@@ -44,13 +44,13 @@ class RedirectSchema(BaseModel):
     @classmethod
     def from_base_models(
         cls,
-        base_model: BaseRedirectSchema,
+        base_model: BaseRedirectEventSchema,
         user_agent: UserAgentSchema,
         ip_info: IPDataSchema,
     ):
         return cls(
-            event_date=base_model.time.date(),
-            event_time=base_model.time,
+            event_date=base_model.event_time.date(),
+            event_time=base_model.event_time,
             short_code=base_model.short_code,
             ip=base_model.ip,
             continent_code=ip_info.continent_code,

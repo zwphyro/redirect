@@ -1,5 +1,3 @@
-from typing import Any
-
 import requests
 from requests import RequestException, Response, Session
 
@@ -35,7 +33,7 @@ class IPService:
             return IPDataSchema.model_validate({})
 
         try:
-            payload: Any = response.json()
+            payload = response.json()
         except ValueError:
             return IPDataSchema.model_validate({})
 

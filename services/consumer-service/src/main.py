@@ -3,4 +3,4 @@ from src.settings import settings
 
 app = Celery("ConsumerService", broker=settings.broker_url)
 
-app.autodiscover_tasks(["src.redirects.task"])
+app.autodiscover_tasks(["src.redirect_events.task"])
