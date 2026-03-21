@@ -6,10 +6,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/redis/go-redis/v9"
 	"github.com/zwphyro/redirect/services/redirect-service/internal/config"
 	"github.com/zwphyro/redirect/services/redirect-service/internal/domain"
-
-	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )

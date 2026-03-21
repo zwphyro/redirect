@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/zwphyro/redirect/services/redirect-service/internal/domain"
-
 	"golang.org/x/sync/singleflight"
 )
 
