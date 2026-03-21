@@ -28,7 +28,7 @@ func main() {
 		log.Fatalf("Failed to connect to Redis: %v", err)
 	}
 
-	redirectRepository := repository.NewRedirectRepository(db, redisClient)
+	redirectRepository := repository.NewPostgresRepository(db, redisClient)
 
 	rabbitMQConnection, err := broker.InitRabbitMQ(config.RabbitMQ)
 	if err != nil {
@@ -36,7 +36,7 @@ func main() {
 	}
 	defer rabbitMQConnection.Close()
 
-	redirectProducer, err := broker.NewRedirectProducer(rabbitMQConnection)
+	redirectProducer, err := broker.NewRabbitMQProducer(rabbitMQConnection)
 	if err != nil {
 		log.Fatalf("Failed to create RabbitMQ producer: %v", err)
 	}

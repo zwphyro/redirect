@@ -34,37 +34,37 @@ func InitRedis(config config.Redis) *redis.Client {
 	})
 }
 
-type RedirectRepository struct {
+type PostgresRepository struct {
 	db    *gorm.DB
 	redis *redis.Client
 }
 
-func NewRedirectRepository(db *gorm.DB, redis *redis.Client) *RedirectRepository {
-	return &RedirectRepository{db: db, redis: redis}
+func NewPostgresRepository(db *gorm.DB, redis *redis.Client) *PostgresRepository {
+	return &PostgresRepository{db: db, redis: redis}
 }
 
-func (r *RedirectRepository) ShortCodeKey(shortCode string) string {
+func (r *PostgresRepository) ShortCodeKey(shortCode string) string {
 	return "short_code:" + shortCode
 }
 
-func (r *RedirectRepository) GetFromCache(ctx context.Context, shortCode string) (string, error) {
+func (r *PostgresRepository) GetFromCache(ctx context.Context, shortCode string) (string, error) {
 	return r.redis.Get(ctx, r.ShortCodeKey(shortCode)).Result()
 }
 
-func (r *RedirectRepository) SetToCache(ctx context.Context, shortCode string, url string, ttl time.Duration) error {
+func (r *PostgresRepository) SetToCache(ctx context.Context, shortCode string, url string, ttl time.Duration) error {
 	return r.redis.Set(ctx, r.ShortCodeKey(shortCode), url, ttl).Err()
 }
 
-func (r *RedirectRepository) GetFromDB(ctx context.Context, shortCode string) (domain.RedirectLink, error) {
+func (r *PostgresRepository) GetFromDB(ctx context.Context, shortCode string) (domain.RedirectLink, error) {
 	var redirectLink domain.RedirectLink
 	result := r.db.WithContext(ctx).Take(&redirectLink, "short_code = ?", shortCode)
 	return redirectLink, result.Error
 }
 
-func (r *RedirectRepository) IsRedisNil(err error) bool {
+func (r *PostgresRepository) IsRedisNil(err error) bool {
 	return errors.Is(err, redis.Nil)
 }
 
-func (r *RedirectRepository) IsRecordNotFound(err error) bool {
+func (r *PostgresRepository) IsRecordNotFound(err error) bool {
 	return errors.Is(err, gorm.ErrRecordNotFound)
 }

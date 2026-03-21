@@ -4,11 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"time"
 
 	"github.com/google/uuid"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/zwphyro/redirect/services/redirect-service/internal/config"
+	"github.com/zwphyro/redirect/services/redirect-service/internal/domain"
 )
 
 func InitRabbitMQ(config config.RabbitMQ) (*amqp.Connection, error) {
@@ -20,31 +20,22 @@ func InitRabbitMQ(config config.RabbitMQ) (*amqp.Connection, error) {
 	))
 }
 
-type RedirectProducer struct {
+type RabbitMQProducer struct {
 	connection  *amqp.Connection
 	channel     *amqp.Channel
 	celeryQueue amqp.Queue
 }
 
-type RedirectData struct {
-	EventTime time.Time `json:"event_time"`
-	ShortCode string    `json:"short_code"`
-	IP        string    `json:"ip"`
-	UserAgent string    `json:"user_agent"`
-	Language  string    `json:"language"`
-	Origin    string    `json:"origin"`
-}
-
 type CeleryMessage struct {
-	ID      string       `json:"id"`
-	Task    string       `json:"task"`
-	Args    []any        `json:"args"`
-	Kwargs  RedirectData `json:"kwargs"`
-	Retries int          `json:"retries"`
-	Eta     any          `json:"eta"`
+	ID      string               `json:"id"`
+	Task    string               `json:"task"`
+	Args    []any                `json:"args"`
+	Kwargs  domain.RedirectEvent `json:"kwargs"`
+	Retries int                  `json:"retries"`
+	Eta     any                  `json:"eta"`
 }
 
-func NewRedirectProducer(connection *amqp.Connection) (*RedirectProducer, error) {
+func NewRabbitMQProducer(connection *amqp.Connection) (*RabbitMQProducer, error) {
 	channel, err := connection.Channel()
 	if err != nil {
 		return nil, err
@@ -62,22 +53,22 @@ func NewRedirectProducer(connection *amqp.Connection) (*RedirectProducer, error)
 		return nil, err
 	}
 
-	return &RedirectProducer{
+	return &RabbitMQProducer{
 		connection:  connection,
 		channel:     channel,
 		celeryQueue: queue,
 	}, nil
 }
 
-func (p *RedirectProducer) PublishRedirect(
+func (p *RabbitMQProducer) PublishRedirect(
 	ctx context.Context,
-	data RedirectData,
+	event domain.RedirectEvent,
 ) error {
 	task := CeleryMessage{
 		ID:     uuid.New().String(),
 		Task:   "src.redirect_events.task.store_redirect_events",
 		Args:   []any{},
-		Kwargs: data,
+		Kwargs: event,
 	}
 
 	body, err := json.Marshal(task)
@@ -100,6 +91,6 @@ func (p *RedirectProducer) PublishRedirect(
 	)
 }
 
-func (p *RedirectProducer) Close() error {
+func (p *RabbitMQProducer) Close() error {
 	return p.connection.Close()
 }

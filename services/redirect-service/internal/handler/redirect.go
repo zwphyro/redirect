@@ -6,26 +6,26 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/zwphyro/redirect/services/redirect-service/internal/broker"
+	"github.com/zwphyro/redirect/services/redirect-service/internal/domain"
 	"github.com/zwphyro/redirect/services/redirect-service/internal/service"
 	"gorm.io/gorm"
 
 	"github.com/gin-gonic/gin"
 )
 
-type Handler struct {
+type RedirectHandler struct {
 	redirectService  *service.RedirectService
 	analyticsService *service.AnalyticsService
 }
 
-func NewHandler(redirectService *service.RedirectService, analyticsService *service.AnalyticsService) *Handler {
-	return &Handler{
+func NewHandler(redirectService *service.RedirectService, analyticsService *service.AnalyticsService) *RedirectHandler {
+	return &RedirectHandler{
 		redirectService:  redirectService,
 		analyticsService: analyticsService,
 	}
 }
 
-func (h *Handler) Redirect(ctx *gin.Context) {
+func (h *RedirectHandler) Redirect(ctx *gin.Context) {
 	shortCode := ctx.Param("short_code")
 
 	targetURL, err := h.redirectService.GetTargetURL(ctx.Request.Context(), shortCode)
@@ -38,7 +38,7 @@ func (h *Handler) Redirect(ctx *gin.Context) {
 			startTime = t.(time.Time)
 		}
 
-		event := broker.RedirectData{
+		event := domain.RedirectEvent{
 			EventTime: startTime,
 			ShortCode: shortCode,
 			IP:        ctx.ClientIP(),
