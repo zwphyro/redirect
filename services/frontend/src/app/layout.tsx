@@ -1,9 +1,10 @@
 import "./globals.css";
-import Providers from "./providers";
 
 import type { Metadata } from "next";
 
 import { cn } from "@/lib/utils";
+
+import { Providers } from "./providers";
 
 const metadata: Metadata = {
   title: "Redirect",
@@ -20,7 +21,9 @@ const RootLayout = ({
       className={cn("h-full", "antialiased")}
     >
       <body className="min-h-full flex flex-col">
-        <Providers>{children}</Providers>
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   );
