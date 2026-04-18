@@ -1,7 +1,7 @@
 [project]
-name = "consumer-service"
+name = "analytics"
 version = "0.1.0"
-description = "Add your description here"
+description = "Celery service to collect user redirect events"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
