@@ -3,7 +3,7 @@ import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import { client } from "@/lib/api/client";
 import { getQueryClient } from "@/lib/api/query-client";
 
-import List from "./list";
+import { List } from "./list";
 
 const Home = async () => {
   const queryClient = getQueryClient();
