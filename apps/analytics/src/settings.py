@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     ch_db_name: str = Field(..., alias="CLICKHOUSE_DB")
     ch_host: str = Field(..., alias="CLICKHOUSE_HOST")
     ch_port: int = Field(..., alias="CLICKHOUSE_PORT")
+    ch_native_port: int = Field(..., alias="CLICKHOUSE_NATIVE_PORT")
     ch_user: str = Field(..., alias="CLICKHOUSE_USER")
     ch_password: str = Field(..., alias="CLICKHOUSE_PASSWORD")
 

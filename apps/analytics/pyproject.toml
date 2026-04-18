@@ -17,5 +17,24 @@ dependencies = [
     "user-agents>=2.2.0",
 ]
 
-# uv run clickhouse-migrations --db-host localhost --db-port 9000 --db-user admin --db-password root --db-name redirect_db --migrations-dir migrations
-# uv run celery -A src.main worker --loglevel=info
+[dependency-groups]
+dev = [
+    "pytest>=9.0.3",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.15.11",
+    "taskipy>=1.14.1",
+]
+
+[tool.taskipy.tasks]
+start-app = "celery -A src.main worker --loglevel=info"
+
+monitor = "celery -A src.main flower"
+
+migrate = "python migrate.py"
+
+lint = "ruff check src tests"
+lint-fix = "ruff check src tests --fix"
+test = "pytest tests"
+test-coverage = "pytest --cov=src tests && coverage html"
+
+list = "task --list"

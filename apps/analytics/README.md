@@ -100,17 +100,17 @@ uv sync
 
 ```bash
 # Apply all ClickHouse migrations
-uv run clickhouse-migrations migrate
+uv run task migrate
 ```
 
 ### Start the Worker
 
 ```bash
 # Start Celery worker
-uv run celery -A src.main worker --loglevel=info
+uv run task start-app
 
 # With concurrency (optional)
-uv run celery -A src.main worker --loglevel=info --concurrency=4
+uv run task start-app --concurrency=4
 ```
 
 ---
@@ -187,14 +187,14 @@ ADD COLUMN new_field String DEFAULT '';
 
 Apply migrations:
 ```bash
-uv run clickhouse-migrations migrate
+uv run task migrate
 ```
 
 ### Monitoring Tasks
 
 ```bash
 # Flower (Celery monitoring) - optional
-uv run celery -A src.main flower
+uv run task monitor
 ```
 
 ### Processing Logic
