@@ -21,8 +21,8 @@ dev = [
 ]
 
 [tool.taskipy.tasks]
+start-app = "uvicorn src.main:app --host 0.0.0.0 --port 8000"
 start-app-dev = "uvicorn --reload src.main:app --host 0.0.0.0 --port 8000"
-start-app-prod = "uvicorn src.main:app --host 0.0.0.0 --port 8000"
 
 migrate-to-head = "alembic upgrade head"
 migrate-to = "alembic upgrade"

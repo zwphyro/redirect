@@ -16,3 +16,6 @@ dependencies = [
     "requests>=2.32.5",
     "user-agents>=2.2.0",
 ]
+
+# uv run clickhouse-migrations --db-host localhost --db-port 9000 --db-user admin --db-password root --db-name redirect_db --migrations-dir migrations
+# uv run celery -A src.main worker --loglevel=info

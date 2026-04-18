@@ -3,16 +3,19 @@
 ## Table of Contents
 1. [Project Overview](#project-overview)
 2. [Architecture Overview](#architecture-overview)
-3. [Service Details](#service-details)
-4. [Communication Contracts](#communication-contracts)
-5. [Database Schema](#database-schema)
-6. [Development Guide](#development-guide)
+3. [Service Inventory](#service-inventory)
+4. [Discovering Current State](#discovering-current-state)
+5. [Communication Contracts](#communication-contracts)
+6. [Database Schema](#database-schema)
+7. [Quick Start Guide](#quick-start-guide)
+8. [Troubleshooting](#troubleshooting)
+9. [Updating Documentation](#updating-documentation)
 
 ---
 
 ## Project Overview
 
-**Project Name:** Redirect URL Management System
+**Project Name:** Redirect
 
 **Purpose:** A complete URL shortening and analytics platform that allows users to create short links, track redirects, and analyze user behavior.
 
@@ -28,24 +31,24 @@
 ## Architecture Overview
 
 ```
-┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│    Frontend     │────▶│   API Backend    │────▶│   PostgreSQL    │
-│   (Next.js)     │     │  (FastAPI)       │     │  (Redirect Links)│
-└─────────────────┘     └──────────────────┘     └─────────────────┘
-                                │
-                                │ Manages
-                                ▼
-┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│   End Users     │────▶│  API Redirect    │────▶│     Redis       │
-│                 │     │    (Go/Gin)      │     │    (Cache)      │
-└─────────────────┘     └────────┬─────────┘     └─────────────────┘
-                                 │
-                                 │ Publishes
-                                 ▼
-                          ┌──────────────┐
-                          │   RabbitMQ   │
-                          │  (Events)    │
-                          └──────┬───────┘
+┌─────────────────┐     ┌──────────────────┐     ┌──────────────────┐
+│    Frontend     ├────▶│   API Backend    ├────▶│   PostgreSQL     │
+│   (Next.js)     │     │  (FastAPI)       │     │ (Redirect Links) │
+└─────────────────┘     └───────┬──────────┘     └──────────────────┘
+                                │                         ▲
+                                │ Manages                 │ Cache Misses
+                                ▼                         │
+┌─────────────────┐     ┌──────────────────┐              │
+│   End Users     ├────▶│  API Redirect    ├──────────────┤
+│                 │     │    (Go/Gin)      │              │
+└─────────────────┘     └────────┬─────────┘              │
+                                 │                        │
+                                 │ Publishes              │ Cache Hits
+                                 ▼                        ▼
+                          ┌──────────────┐        ┌──────────────────┐ 
+                          │   RabbitMQ   │        │     Redis        │
+                          │  (Events)    │        │    (Cache)       │
+                          └──────┬───────┘        └──────────────────┘
                                  │
                                  │ Consumes
                                  ▼
@@ -62,189 +65,131 @@
                           └──────────────┘
 ```
 
----
-
-## Service Details
-
-### 1. API Redirect Service (`apps/api-redirect/`)
-
-**Purpose:** High-performance redirect handler that processes incoming short URL requests, retrieves target URLs, and publishes analytics events.
-
-**Technology:** Go 1.25, Gin framework
-
-**Key Responsibilities:**
-- Handle GET `/:short_code` requests
-- Lookup redirect links from PostgreSQL (with Redis caching)
-- Publish redirect events to RabbitMQ for analytics
-- Track request timing metrics
-
-**Dependencies:**
-- PostgreSQL (via GORM)
-- Redis (go-redis)
-- RabbitMQ (amqp091-go)
-
-**Key Files:**
-- `cmd/redirect/main.go` - Application entry point
-- `internal/handler/redirect.go` - HTTP handlers
-- `internal/service/redirect.go` - Business logic
-- `internal/service/analytics.go` - Event publishing
-- `internal/repository/postgresql.go` - Data access layer
-- `internal/broker/rabbitmq.go` - Message broker client
-
-**Configuration:** See `.env.example` for `REDIS_*`, `POSTGRES_*`, `RABBITMQ_*` variables
+**Data Flow:**
+1. **Link Management:** Frontend → API Backend → PostgreSQL
+2. **Redirects:** End Users → API Redirect → PostgreSQL (with Redis cache)
+3. **Analytics:** API Redirect → RabbitMQ → Analytics Worker → ClickHouse
 
 ---
 
-### 2. API Backend Service (`apps/api-backend/`)
+## Service Inventory
 
-**Purpose:** REST API for managing redirect links (CRUD operations).
+| Service | Technology | Port | Purpose | Documentation |
+|---------|------------|------|---------|---------------|
+| api-redirect | Go 1.25, Gin | 8080 | High-performance redirect handler | [README](./apps/api-redirect/README.md) |
+| api-backend | Python 3.13, FastAPI | 8000 | REST API for managing links | [README](./apps/api-backend/README.md) |
+| analytics | Python 3.13, Celery | - | Background analytics worker | [README](./apps/analytics/README.md) |
+| frontend | Next.js 16, React 19 | 3000 | Web UI for link management | [README](./apps/frontend/README.md) |
 
-**Technology:** Python 3.13, FastAPI, SQLAlchemy 2.0, Alembic
+---
 
-**Key Responsibilities:**
-- Create, read, update, delete redirect links
-- Generate unique short codes
-- Provide OpenAPI specification for frontend
+## Discovering Current State
 
-**API Endpoints:**
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/v1/redirect_links` | List all redirect links |
-| POST | `/api/v1/redirect_links` | Create new redirect link |
-| GET | `/api/v1/redirect_links/{id}` | Get specific link |
-| PUT | `/api/v1/redirect_links/{id}` | Update redirect link |
-| DELETE | `/api/v1/redirect_links/{id}` | Delete redirect link |
+### API Endpoints
 
-**Key Files:**
-- `src/main.py` - FastAPI application
-- `src/redirect_link/routes.py` - API routes
-- `src/redirect_link/service.py` - Business logic
-- `src/redirect_link/models.py` - SQLAlchemy models
-- `src/redirect_link/short_code.py` - Short code generation
+The API Backend provides auto-generated OpenAPI documentation:
 
-**Database Migrations:**
 ```bash
-# Create new migration
-uv run task migrate-revision "description"
-
-# Apply migrations
-uv run task migrate-to-head
+# Start the API Backend service, then visit:
+http://localhost:8000/docs        # Swagger UI
+http://localhost:8000/redoc       # ReDoc
+http://localhost:8000/openapi.json # OpenAPI specification
 ```
 
----
-
-### 3. Analytics Service (`apps/analytics/`)
-
-**Purpose:** Background worker that consumes redirect events, enriches them with user agent and IP data, and stores in ClickHouse.
-
-**Technology:** Python 3.13, Celery, ClickHouse
-
-**Key Responsibilities:**
-- Consume messages from RabbitMQ
-- Parse User-Agent strings (device, browser, OS)
-- Geolocate IP addresses
-- Batch insert events into ClickHouse
-
-**Key Files:**
-- `src/main.py` - Celery application setup
-- `src/redirect_events/task.py` - Celery task handlers
-- `src/redirect_events/service.py` - Processing logic
-- `src/redirect_events/repository.py` - ClickHouse client
-- `src/user_agent/` - User-Agent parsing
-- `src/ip/` - IP geolocation
-
-**Database Migrations:**
-Located in `migrations/` directory, applied via `clickhouse-migrations`
-
----
-
-### 4. Frontend Service (`apps/frontend/`)
-
-**Purpose:** Web UI for managing redirect links with server-side rendering.
-
-**Technology:** Next.js 16, React 19, TypeScript, Tailwind CSS, shadcn/ui
-
-**Key Responsibilities:**
-- Display list of redirect links
-- Create new short links
-- Edit and delete existing links
-- API client auto-generated from OpenAPI spec
-
-**Key Files:**
-- `src/app/page.tsx` - Main page
-- `src/app/list.tsx` - Links list component
-- `src/lib/api/client.ts` - API client
-- `src/lib/api/v1.d.ts` - Auto-generated TypeScript types
-
-**API Integration:**
+**Or query via CLI:**
 ```bash
-# Update API types from running backend
-npm run openapi:update
+curl http://localhost:8000/openapi.json | jq
+```
+
+### Database Schemas
+
+**PostgreSQL (api-backend):**
+```bash
+# Connect to database
+docker compose exec postgres psql -U $POSTGRES_USER -d $POSTGRES_DB
+
+# List tables
+\dt
+
+# Describe table
+\d redirect_links
+```
+
+**ClickHouse (analytics):**
+```bash
+# Connect to ClickHouse
+docker compose exec clickhouse clickhouse-client
+
+# List tables
+SHOW TABLES;
+
+# Describe table
+DESCRIBE redirect_events;
+```
+
+### Message Queue
+
+**RabbitMQ Management UI:**
+```
+http://localhost:15672
+```
+
+**Or via CLI:**
+```bash
+# List queues
+docker compose exec rabbitmq rabbitmqctl list_queues
+
+# List bindings
+docker compose exec rabbitmq rabbitmqctl list_bindings
+```
+
+### Project Structure
+
+Use standard tools to explore:
+```bash
+# List Go source files
+find apps/api-redirect -name "*.go" | head -20
+
+# List Python modules
+find apps/api-backend/src -name "*.py" | head -20
+
+# List React components
+find apps/frontend/src -name "*.tsx" | head -20
 ```
 
 ---
 
 ## Communication Contracts
 
-### Event Message Format (RabbitMQ)
+### REST API Contracts
 
-**Queue:** `redirect_events`
+**Base URL:** `http://localhost:8000/api/v1`
 
-**Message Structure:**
-```json
-{
-  "short_code": "abc123",
-  "target_url": "https://example.com",
-  "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)...",
-  "ip_address": "192.168.1.1",
-  "referer": "https://google.com",
-  "language": "en-US",
-  "timestamp": "2024-01-15T10:30:00Z",
-  "request_duration_ms": 45
-}
-```
+**Discovery:** API documentation is auto-generated from code. See [Discovering Current State](#discovering-current-state) section.
 
-**Publisher:** `api-redirect` service (`internal/service/analytics.go`)
-
-**Consumer:** `analytics` service (`src/redirect_events/task.py`)
+**Key Concept:** The API provides CRUD operations for redirect links. For current endpoints, request/response schemas, and examples, refer to the live OpenAPI documentation at `/docs` when the service is running.
 
 ---
 
-### API Contracts
+### Message Queue Contracts
 
-#### Redirect Link Model
+**Broker:** RabbitMQ
 
-```json
-{
-  "id": "uuid",
-  "short_code": "abc123",
-  "target_url": "https://example.com",
-  "is_active": true,
-  "created_at": "2024-01-15T10:00:00Z",
-  "updated_at": "2024-01-15T10:00:00Z"
-}
-```
+**Queue:** `redirect_events`
 
-#### Create Redirect Link Request
+**Core Message Fields:**
+- `short_code` - Short link identifier
+- `user_agent` - Client User-Agent string
+- `ip` - Client IP address
+- `event_time` - Event timestamp
 
-```json
-{
-  "target_url": "https://example.com"
-}
-```
+**Discovery:** For the complete message schema, see:
+- **Publisher:** `apps/api-redirect/internal/domain/redirect_event.go`
+- **Consumer:** `apps/analytics/src/redirect_events/schemas.py`
 
-#### Create Redirect Link Response
+**Publisher:** [api-redirect](./apps/api-redirect/README.md)
 
-```json
-{
-  "id": "uuid",
-  "short_code": "abc123",
-  "target_url": "https://example.com",
-  "is_active": true,
-  "created_at": "2024-01-15T10:00:00Z",
-  "updated_at": "2024-01-15T10:00:00Z"
-}
-```
+**Consumer:** [analytics](./apps/analytics/README.md)
 
 ---
 
@@ -252,42 +197,48 @@ npm run openapi:update
 
 ### PostgreSQL (api-backend)
 
-**Table:** `redirect_links`
+**Core Table:** `redirect_links`
 
-| Column | Type | Constraints |
-|--------|------|-------------|
-| id | UUID | PRIMARY KEY |
-| short_code | VARCHAR | UNIQUE, NOT NULL |
-| target_url | VARCHAR | NOT NULL |
-| is_active | BOOLEAN | DEFAULT TRUE |
-| created_at | TIMESTAMP | NOT NULL |
-| updated_at | TIMESTAMP | NOT NULL |
+**Key Fields:**
+- `id` (UUID, PK) - Unique identifier
+- `short_code` (VARCHAR, UNIQUE) - Short URL code
+- `target_url` (VARCHAR) - Destination URL
+- `is_active` (BOOLEAN) - Link status
+- `created_at`, `updated_at` (TIMESTAMP) - Timestamps
 
-### ClickHouse (analytics)
+**Discovery:** For complete schema, migrations, and indexes:
+```bash
+# View migration files
+ls apps/api-backend/migrations/versions/
 
-**Table:** `redirect_events`
-
-| Column | Type | Description |
-|--------|------|-------------|
-| short_code | String | Short link code |
-| target_url | String | Destination URL |
-| user_agent | String | Raw User-Agent |
-| browser | String | Parsed browser name |
-| browser_version | String | Browser version |
-| os | String | Operating system |
-| os_version | String | OS version |
-| device | String | Device type |
-| ip_address | String | Client IP |
-| country | String | Geolocated country |
-| city | String | Geolocated city |
-| referer | String | Referrer URL |
-| language | String | Accept-Language |
-| timestamp | DateTime | Event timestamp |
-| request_duration_ms | UInt32 | Request processing time |
+# View current table structure (requires running database)
+docker compose exec postgres psql -U $POSTGRES_USER -d $POSTGRES_DB -c "\d redirect_links"
+```
 
 ---
 
-## Development Guide
+### ClickHouse (analytics)
+
+**Core Table:** `redirect_events`
+
+**Key Fields:**
+- Event data: `short_code`, `target_url`, `event_date`
+- Parsed User-Agent: `browser`, `os`, `device`
+- Geolocation: `country`, `city`
+- Raw data: `ip`
+
+**Discovery:** For complete schema and migrations:
+```bash
+# View migration files
+ls apps/analytics/migrations/
+
+# View current table structure (requires running database)
+docker compose exec clickhouse clickhouse-client -q "DESCRIBE redirect_events"
+```
+
+---
+
+## Quick Start Guide
 
 ### Prerequisites
 
@@ -308,47 +259,25 @@ cp .env.example .env
 docker compose up -d
 ```
 
-3. Run migrations:
+3. Run database migrations:
 ```bash
-# PostgreSQL (api-backend)
-cd apps/api-backend
-uv run task migrate-to-head
+# PostgreSQL
+cd apps/api-backend && uv run task migrate-to-head
 
-# ClickHouse (analytics)
-cd apps/analytics
-uv run clickhouse-migrations migrate
+# ClickHouse
+cd apps/analytics && uv run clickhouse-migrations migrate
 ```
 
 ### Running Services
 
-#### API Redirect (Go)
-```bash
-cd apps/api-redirect
-go run cmd/redirect/main.go
-# Server starts on port from env (default: 8080)
-```
+| Service | Command | URL |
+|---------|---------|-----|
+| api-redirect | `cd apps/api-redirect && go run cmd/redirect/main.go` | http://localhost:8080 |
+| api-backend | `cd apps/api-backend && uv run task start-app` | http://localhost:8000 |
+| analytics | `cd apps/analytics && uv run celery -A src.main worker --loglevel=info` | - |
+| frontend | `cd apps/frontend && npm run dev` | http://localhost:3000 |
 
-#### API Backend (Python)
-```bash
-cd apps/api-backend
-uv run task start-app-dev
-# Server starts on http://localhost:8000
-```
-
-#### Analytics Worker (Python)
-```bash
-cd apps/analytics
-uv run celery -A src.main worker --loglevel=info
-```
-
-#### Frontend (Next.js)
-```bash
-cd apps/frontend
-npm run dev
-# Server starts on http://localhost:3000
-```
-
-### Service Ports
+### Service Ports Reference
 
 | Service | Port | Description |
 |---------|------|-------------|
@@ -358,65 +287,56 @@ npm run dev
 | PostgreSQL | 5432 | Main database |
 | Redis | 6379 | Cache |
 | RabbitMQ | 5672 | Message broker |
-| RabbitMQ Mgmt | 15672 | RabbitMQ UI |
-| ClickHouse | 8123 | Analytics DB |
-
-### Testing
-
-```bash
-# API Backend
-cd apps/api-backend
-uv run task test
-
-# Frontend
-cd apps/frontend
-npm run lint
-```
-
----
-
-## Common Tasks for Agents
-
-### Adding a New API Endpoint
-
-1. Define route in `apps/api-backend/src/redirect_link/routes.py`
-2. Implement service logic in `apps/api-backend/src/redirect_link/service.py`
-3. Add repository methods if needed
-4. Regenerate frontend types: `cd apps/frontend && npm run openapi:update`
-
-### Modifying Database Schema
-
-1. Update model in `apps/api-backend/src/redirect_link/models.py`
-2. Generate migration: `uv run task migrate-revision "description"`
-3. Apply migration: `uv run task migrate-to-head`
-
-### Adding Analytics Event Fields
-
-1. Update event schema in `apps/api-redirect/internal/domain/redirect_event.go`
-2. Update publisher in `apps/api-redirect/internal/service/analytics.go`
-3. Update consumer in `apps/analytics/src/redirect_events/`
-4. Update ClickHouse schema migration
+| RabbitMQ Mgmt | 15672 | Management UI |
+| ClickHouse | 8123 | Analytics database |
 
 ---
 
 ## Troubleshooting
 
-### Services won't start
+### Services Won't Start
 - Check `.env` file exists and is configured
 - Verify Docker containers are running: `docker compose ps`
 - Check logs: `docker compose logs <service>`
 
-### Database connection errors
+### Database Connection Errors
 - Verify PostgreSQL is healthy: `docker compose ps postgres`
 - Check credentials in `.env`
 - Ensure migrations are applied
 
-### RabbitMQ connection issues
+### RabbitMQ Connection Issues
 - Check RabbitMQ is running: `docker compose ps rabbitmq`
 - Verify credentials in `.env`
-- Management UI: http://localhost:15672 (guest/guest)
+- Management UI: http://localhost:15672
 
 ---
 
-*Last updated: 2024-01-15*
+## Updating Documentation
 
+When making changes to the system, update the relevant documentation:
+
+### Code Changes
+
+| Change Type | Files to Update |
+|-------------|-----------------|
+| **New API endpoint** | Add to `apps/api-backend/src/redirect_link/routes.py` - OpenAPI auto-generates docs |
+| **API schema changes** | Update Pydantic schemas in `apps/api-backend/src/redirect_link/schemas.py` |
+| **Database schema (PostgreSQL)** | Create Alembic migration: `uv run task migrate-revision "description"` |
+| **Database schema (ClickHouse)** | Add migration file in `apps/analytics/migrations/` |
+| **Message event fields** | Update both `apps/api-redirect/internal/domain/redirect_event.go` and `apps/analytics/src/redirect_events/schemas.py` |
+| **New service** | Add to root `AGENTS.md` service inventory and create service `README.md` |
+
+### Documentation Principles
+
+1. **Don't duplicate volatile information** - Link to live docs (OpenAPI, database) instead of copying
+2. **Document architecture and concepts** - Explain how things work, not just what exists
+3. **Provide discovery instructions** - Tell agents how to find current state
+4. **Keep service READMEs focused** - Purpose, key concepts, running instructions, troubleshooting
+
+### Verification Checklist
+
+After making changes, verify:
+- [ ] OpenAPI docs show new endpoints/schemas (if applicable)
+- [ ] Database migrations are applied successfully
+- [ ] Service README mentions the change if it's a key concept
+- [ ] Root AGENTS.md still accurate (service inventory, architecture)

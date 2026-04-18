@@ -15,7 +15,7 @@ type Config struct {
 }
 
 type HTTPServer struct {
-	Port    string        `env:"REDIRECT_SERVICE_PORT" env-default:"8001"`
+	Port    string        `env:"REDIRECT_SERVICE_PORT" env-default:"8080"`
 	Timeout time.Duration `env:"REDIRECT_TIMEOUT" env-default:"1s"`
 }
 
