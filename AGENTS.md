@@ -91,8 +91,8 @@ The API Backend provides auto-generated OpenAPI documentation:
 
 ```bash
 # Start the API Backend service, then visit:
-http://localhost:8000/docs        # Swagger UI
-http://localhost:8000/redoc       # ReDoc
+http://localhost:8000/docs         # Swagger UI
+http://localhost:8000/redoc        # ReDoc
 http://localhost:8000/openapi.json # OpenAPI specification
 ```
 
@@ -118,7 +118,7 @@ docker compose exec postgres psql -U $POSTGRES_USER -d $POSTGRES_DB
 **ClickHouse (analytics):**
 ```bash
 # Connect to ClickHouse
-docker compose exec clickhouse clickhouse-client
+docker compose exec clickhouse clickhouse-client -d $CLICKHOUSE_DB
 
 # List tables
 SHOW TABLES;
@@ -233,7 +233,7 @@ docker compose exec postgres psql -U $POSTGRES_USER -d $POSTGRES_DB -c "\d redir
 ls apps/analytics/migrations/
 
 # View current table structure (requires running database)
-docker compose exec clickhouse clickhouse-client -q "DESCRIBE redirect_events"
+docker compose exec clickhouse clickhouse-client -d $CLICKHOUSE_DB -q "DESCRIBE redirect_events"
 ```
 
 ---
@@ -272,9 +272,9 @@ cd apps/analytics && uv run clickhouse-migrations migrate
 
 | Service | Command | URL |
 |---------|---------|-----|
-| api-redirect | `cd apps/api-redirect && go run cmd/redirect/main.go` | http://localhost:8080 |
-| api-backend | `cd apps/api-backend && uv run task start-app` | http://localhost:8000 |
-| analytics | `cd apps/analytics && uv run celery -A src.main worker --loglevel=info` | - |
+| api-redirect | `cd apps/api-redirect && go run cmd/main.go` | http://localhost:8080 |
+| api-backend | `cd apps/api-backend && uv run task start` | http://localhost:8000 |
+| analytics | `cd apps/analytics && uv run task start` | - |
 | frontend | `cd apps/frontend && npm run dev` | http://localhost:3000 |
 
 ### Service Ports Reference
@@ -319,8 +319,8 @@ When making changes to the system, update the relevant documentation:
 
 | Change Type | Files to Update |
 |-------------|-----------------|
-| **New API endpoint** | Add to `apps/api-backend/src/redirect_link/routes.py` - OpenAPI auto-generates docs |
-| **API schema changes** | Update Pydantic schemas in `apps/api-backend/src/redirect_link/schemas.py` |
+| **New API endpoint** | Add to `apps/api-backend/src/<domain>/routes.py` - OpenAPI auto-generates docs |
+| **API schema changes** | Update Pydantic schemas in `apps/api-backend/src/<domain>/schemas.py` |
 | **Database schema (PostgreSQL)** | Create Alembic migration: `uv run task migrate-revision "description"` |
 | **Database schema (ClickHouse)** | Add migration file in `apps/analytics/migrations/` |
 | **Message event fields** | Update both `apps/api-redirect/internal/domain/redirect_event.go` and `apps/analytics/src/redirect_events/schemas.py` |

@@ -32,7 +32,7 @@
 - `internal/config/` - Configuration
 
 **Key Files:**
-- `cmd/redirect/main.go` - Application initialization
+- `cmd/main.go` - Application initialization
 - `internal/handler/redirect.go` - HTTP handlers
 - `internal/service/redirect.go` - Business logic
 - `internal/service/analytics.go` - Event publishing
@@ -89,7 +89,7 @@ Environment variables (see root `.env.example`):
 
 ```bash
 cd apps/api-redirect
-go run cmd/redirect/main.go
+go run cmd/main.go
 ```
 
 The server will start on port 8080.
@@ -141,7 +141,7 @@ See [root AGENTS.md](../../AGENTS.md) for message contract details.
 
 1. Create file in `internal/middleware/`
 2. Implement middleware function: `func gin.HandlerFunc`
-3. Register in `cmd/redirect/main.go`
+3. Register in `cmd/main.go`
 
 ### Modifying Event Schema
 

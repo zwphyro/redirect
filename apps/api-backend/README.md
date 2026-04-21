@@ -103,10 +103,10 @@ uv run task migrate-check-history
 
 ```bash
 # Development (with auto-reload)
-uv run task start-app-dev
+uv run task start-dev
 
 # Production
-uv run task start-app
+uv run task start
 ```
 
 The API will be available at http://localhost:8000
@@ -163,13 +163,13 @@ docker compose exec postgres psql -U $POSTGRES_USER -d $POSTGRES_DB -c "\d redir
 uv run task list
 
 # Common tasks
-uv run task start-app-dev       # Run with auto-reload
-uv run task migrate-to-head     # Apply migrations
+uv run task start-dev                       # Run with auto-reload
+uv run task migrate-to-head                 # Apply migrations
 uv run task migrate-revision "description"  # Create migration
-uv run task lint                # Run linter
-uv run task lint-fix            # Fix linting issues
-uv run task test                # Run tests
-uv run task test-coverage       # Run tests with coverage
+uv run task lint                            # Run linter
+uv run task lint-fix                        # Fix linting issues
+uv run task test                            # Run tests
+uv run task test-coverage                   # Run tests with coverage
 ```
 
 ### Creating Migrations

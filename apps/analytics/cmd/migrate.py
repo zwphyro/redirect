@@ -5,13 +5,12 @@ from src.settings import settings
 
 
 def main():
-    """Run clickhouse-migrations with settings from environment."""
     cmd = [
         "clickhouse-migrations",
         "--db-host",
         settings.ch_host,
         "--db-port",
-        settings.ch_native_port,
+        str(settings.ch_native_port),
         "--db-user",
         settings.ch_user,
         "--db-password",

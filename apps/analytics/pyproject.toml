@@ -26,11 +26,8 @@ dev = [
 ]
 
 [tool.taskipy.tasks]
-start-app = "celery -A src.main worker --loglevel=info"
-
-monitor = "celery -A src.main flower"
-
-migrate = "python migrate.py"
+start = "celery -A cmd.main worker --loglevel=info"
+migrate = "python -m cmd.migrate"
 
 lint = "ruff check src tests"
 lint-fix = "ruff check src tests --fix"

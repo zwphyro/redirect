@@ -107,10 +107,7 @@ uv run task migrate
 
 ```bash
 # Start Celery worker
-uv run task start-app
-
-# With concurrency (optional)
-uv run task start-app --concurrency=4
+uv run task start
 ```
 
 ---
@@ -166,7 +163,7 @@ See [root AGENTS.md](../../AGENTS.md) for message contract details.
 
 **View current schema:**
 ```bash
-docker compose exec clickhouse clickhouse-client -q "DESCRIBE redirect_events"
+docker compose exec clickhouse clickhouse-client -d redirect_db -q "DESCRIBE redirect_events"
 ```
 
 The ClickHouse schema for `redirect_events` must match the `RedirectEventSchema` schema from `src/redirect_events/schemas.py`.
@@ -188,13 +185,6 @@ ADD COLUMN new_field String DEFAULT '';
 Apply migrations:
 ```bash
 uv run task migrate
-```
-
-### Monitoring Tasks
-
-```bash
-# Flower (Celery monitoring) - optional
-uv run task monitor
 ```
 
 ### Processing Logic
