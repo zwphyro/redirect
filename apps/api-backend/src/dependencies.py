@@ -11,4 +11,3 @@ async def get_uow():
 
 
 UOWDependency = Annotated[UnitOfWork, Depends(get_uow)]
-

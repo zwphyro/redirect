@@ -1,3 +1,4 @@
+from functools import lru_cache
 import os
 
 from pydantic import Field
@@ -26,4 +27,6 @@ class Settings(BaseSettings):
         )
 
 
-settings = Settings()  # type: ignore
+@lru_cache
+def get_settings():
+    return Settings()  # type: ignore

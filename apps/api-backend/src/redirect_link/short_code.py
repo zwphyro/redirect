@@ -9,5 +9,5 @@ class ShortCodeGenerator:
             for start, end in [("a", "z"), ("A", "Z"), ("0", "9")]
         )
 
-    def generate(self) -> str:
+    def generate(self):
         return "".join(choice(self._symbols) for _ in range(self._length))

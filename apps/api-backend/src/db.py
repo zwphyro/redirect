@@ -5,7 +5,9 @@ from sqlalchemy.orm import DeclarativeBase, declared_attr, Mapped, mapped_column
 from sqlalchemy import DateTime, func
 from re import sub
 
-from src.settings import settings
+from src.settings import get_settings
+
+settings = get_settings()
 
 engine = create_async_engine(settings.db_url)
 AsyncSessionLocal = async_sessionmaker(engine, expire_on_commit=False)

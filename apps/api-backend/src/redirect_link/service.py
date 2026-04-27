@@ -1,6 +1,6 @@
 from src.redirect_link.short_code import ShortCodeGenerator
 from src.unit_of_work import UnitOfWork
-from src.exceptions import DatabaseError
+from src.exceptions import DatabaseError, NotFoundError
 
 
 class RedirectLinkService:
@@ -16,7 +16,12 @@ class RedirectLinkService:
         return await self._uow.redirect_link.list(limit=limit, offset=offset)
 
     async def get_link(self, short_code: str):
-        return await self._uow.redirect_link.get_by_short_code(short_code)
+        link = await self._uow.redirect_link.get_by_short_code(short_code)
+
+        if link is None:
+            raise NotFoundError("Redirect link not found")
+
+        return link
 
     async def create_link(self, target_url: str):
         max_attempts = 10
@@ -29,6 +34,7 @@ class RedirectLinkService:
                     target_url=target_url,
                 )
                 await self._uow.commit()
+
                 return redirect
             except DatabaseError:
                 await self._uow.rollback()
