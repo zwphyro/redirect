@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta, timezone
-from pydantic import BaseModel, ConfigDict, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class UserSchema(BaseModel):
@@ -14,22 +14,30 @@ class UserSchema(BaseModel):
 
 class CreateUserSchema(BaseModel):
     email: EmailStr
-    password: str
+    password: str = Field(min_length=8)
+
+
+class LoginUserSchema(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=8)
 
 
 class BaseTokenPayload(BaseModel):
     sub: str
     exp: datetime | None = None
+    type: str = ""
 
     def model_dump_payload(self, expires_delta: timedelta):
         self.exp = datetime.now(timezone.utc) + expires_delta
         return self.model_dump()
 
 
-class AccessTokenPayload(BaseTokenPayload): ...
+class AccessTokenPayload(BaseTokenPayload):
+    type: str = Field("access", pattern=r"^access$")
 
 
-class RefreshTokenPayload(BaseTokenPayload): ...
+class RefreshTokenPayload(BaseTokenPayload):
+    type: str = Field("refresh", pattern=r"^refresh$")
 
 
 class TokenPairSchema(BaseModel):
