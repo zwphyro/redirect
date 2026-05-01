@@ -7,21 +7,23 @@ from fastapi.security import (
 )
 from pwdlib import PasswordHash
 
-from src.auth.cryptography import get_hash
+from src.auth.cryptography import get_password_hash
 from src.auth.models import User
 from src.auth.service import AuthService
 from src.auth.token import Token
 from src.dependencies import UOWDependency
+from src.settings import get_settings
 
-HashDependency = Annotated[PasswordHash, Depends(get_hash)]
+PasswordHashDependency = Annotated[PasswordHash, Depends(get_password_hash)]
 
 
 def get_token():
+    settings = get_settings()
     return Token(
-        secret_key="secret",
-        algorithm="HS256",
-        access_token_expire=timedelta(minutes=10),
-        refresh_token_expire=timedelta(days=30),
+        secret_key=settings.jwt_secret_key,
+        algorithm=settings.jwt_algorithm,
+        access_token_expire=timedelta(minutes=settings.access_token_expire_minutes),
+        refresh_token_expire=timedelta(days=settings.refresh_token_expire_days),
     )
 
 
@@ -30,10 +32,10 @@ TokenDependency = Annotated[Token, Depends(get_token)]
 
 def get_auth_service(
     uow: UOWDependency,
-    hash: HashDependency,
+    password_hash: PasswordHashDependency,
     token: TokenDependency,
 ):
-    return AuthService(uow, hash, token)
+    return AuthService(uow, password_hash, token)
 
 
 ServiceDependency = Annotated[AuthService, Depends(get_auth_service)]

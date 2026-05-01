@@ -3,7 +3,7 @@ from pwdlib import PasswordHash
 from src.auth.exceptions import (
     IncorrectLoginOrPasswordError,
     InvalidPayloadError,
-    TokenEpiredError,
+    TokenExpiredError,
     UserNotFoundError,
 )
 from src.auth.schemas import AccessTokenPayload, RefreshTokenPayload
@@ -12,23 +12,20 @@ from src.unit_of_work import UnitOfWork
 
 
 class AuthService:
-    def __init__(self, uow: UnitOfWork, hash: PasswordHash, token: Token):
+    def __init__(self, uow: UnitOfWork, password_hash: PasswordHash, token: Token):
         self._uow = uow
-        self._hash = hash
+        self._password_hash = password_hash
         self._token = token
 
     async def register(self, email: str, password: str):
         user = await self._uow.auth.get_user_by_email(email)
 
         if user is not None:
-            # INFO: ignore if user already exists
+            # INFO: explicitly ignore if user already exists
             return
 
-        try:
-            password_hash = self._hash.hash(password)
-        except Exception as error:
-            print(error)
-            return
+        password_hash = self._password_hash.hash(password)
+
         await self._uow.auth.create_user(email, password_hash)
         await self._uow.commit()
 
@@ -38,7 +35,7 @@ class AuthService:
         if user is None:
             raise IncorrectLoginOrPasswordError("Incorrect login or password")
 
-        if not self._hash.verify(password, user.password_hash):
+        if not self._password_hash.verify(password, user.password_hash):
             raise IncorrectLoginOrPasswordError("Incorrect login or password")
 
         user_id = str(user.id)
@@ -56,7 +53,7 @@ class AuthService:
             raise InvalidPayloadError("Can't decode access token")
 
         if payload.exp is None or payload.exp < datetime.now(timezone.utc):
-            raise TokenEpiredError("Token epired")
+            raise TokenExpiredError("Token epired")
 
         user_id = payload.sub
         user = await self._uow.auth.get_user_by_id(int(user_id))
@@ -73,7 +70,7 @@ class AuthService:
             raise InvalidPayloadError("Can't decode access token")
 
         if payload.exp is None or payload.exp < datetime.now(timezone.utc):
-            raise TokenEpiredError("Token epired")
+            raise TokenExpiredError("Token epired")
 
         user_id = payload.sub
         user = await self._uow.auth.get_user_by_id(int(user_id))

@@ -4,7 +4,7 @@ from starlette.responses import JSONResponse
 from src.auth.exceptions import (
     IncorrectLoginOrPasswordError,
     InvalidPayloadError,
-    TokenEpiredError,
+    TokenExpiredError,
     UserNotFoundError,
 )
 
@@ -13,7 +13,7 @@ def register(app: FastAPI):
     exceptions = [
         IncorrectLoginOrPasswordError,
         InvalidPayloadError,
-        TokenEpiredError,
+        TokenExpiredError,
         UserNotFoundError,
     ]
     status_codes = [

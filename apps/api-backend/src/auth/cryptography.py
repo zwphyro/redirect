@@ -3,5 +3,5 @@ from pwdlib import PasswordHash
 
 
 @lru_cache
-def get_hash():
+def get_password_hash():
     return PasswordHash.recommended()

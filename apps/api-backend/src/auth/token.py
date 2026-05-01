@@ -37,7 +37,7 @@ class Token:
 
     def _decode_token_or_none(self, token: str):
         try:
-            return decode(token, key=self._secret_key, algorithms=self._algorithm)
+            return decode(token, key=self._secret_key, algorithms=[self._algorithm])
         except PyJWTError:
             return None
 

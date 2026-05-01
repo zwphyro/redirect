@@ -1,8 +1,9 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class HTTPExceptionSchema(BaseModel):
     detail: str
 
-    class Config:
-        json_schema_extra = {"example": {"detail": "Error message"}}
+    model_config = ConfigDict(
+        json_schema_extra={"example": {"detail": "Error message"}}
+    )
