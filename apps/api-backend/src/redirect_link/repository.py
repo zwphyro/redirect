@@ -33,6 +33,9 @@ class RedirectLinkRepository:
 
     async def delete(self, short_code: str):
         link = await self.get_by_short_code(short_code)
-        await self._session.delete(link)
 
+        if link is None:
+            return None
+
+        await self._session.delete(link)
         return link

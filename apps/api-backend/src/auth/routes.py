@@ -34,7 +34,7 @@ async def login(user: LoginUserSchema, service: ServiceDependency):
     return TokenPairSchema(access_token=access_token, refresh_token=refresh_token)
 
 
-@router.post("/refresh")
+@router.post("/refresh", response_model=TokenPairSchema)
 async def refresh(refresh_data: RefreshTokenSchema, service: ServiceDependency):
     access_token, refresh_token = await service.refresh(refresh_data.refresh_token)
 
