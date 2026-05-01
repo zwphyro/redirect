@@ -29,13 +29,13 @@ class RedirectLinkService:
         for _ in range(max_attempts):
             try:
                 short_code = self._short_code_generator.generate()
-                redirect = await self._uow.redirect_link.create(
+                link = await self._uow.redirect_link.create(
                     short_code=short_code,
                     target_url=target_url,
                 )
                 await self._uow.commit()
 
-                return redirect
+                return link
             except DatabaseError:
                 await self._uow.rollback()
                 continue
@@ -43,11 +43,21 @@ class RedirectLinkService:
         raise RuntimeError("Failed to generate unique short code")
 
     async def delete_link(self, short_code: str):
-        redirect = await self._uow.redirect_link.delete(short_code)
+        link = await self._uow.redirect_link.delete(short_code)
+
+        if link is None:
+            raise NotFoundError("Redirect link not found")
+
         await self._uow.commit()
-        return redirect
+        return link
 
     async def toggle_active(self, short_code: str):
-        redirect = await self._uow.redirect_link.toggle_active(short_code)
+        link = await self._uow.redirect_link.get_by_short_code(short_code)
+
+        if link is None:
+            raise NotFoundError("Redirect link not found")
+
+        link.is_active = not link.is_active
+
         await self._uow.commit()
-        return redirect
+        return link

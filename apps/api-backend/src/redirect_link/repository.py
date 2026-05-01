@@ -26,19 +26,13 @@ class RedirectLinkRepository:
         return result.scalars().first()
 
     async def create(self, short_code: str, target_url: str):
-        redirect = RedirectLink(short_code=short_code, target_url=target_url)
-        self._session.add(redirect)
+        link = RedirectLink(short_code=short_code, target_url=target_url)
+        self._session.add(link)
 
-        return redirect
+        return link
 
     async def delete(self, short_code: str):
-        redirect = await self.get_by_short_code(short_code)
-        await self._session.delete(redirect)
+        link = await self.get_by_short_code(short_code)
+        await self._session.delete(link)
 
-        return redirect
-
-    async def toggle_active(self, short_code: str):
-        redirect = await self.get_by_short_code(short_code)
-        redirect.is_active = not redirect.is_active
-
-        return redirect
+        return link

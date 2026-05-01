@@ -13,8 +13,8 @@ async def list_links(
     limit: int | None = Query(default=None, ge=1),
     offset: int | None = Query(default=None, ge=0),
 ):
-    redirects = await service.list(limit=limit, offset=offset)
-    return redirects
+    links = await service.list(limit=limit, offset=offset)
+    return links
 
 
 @router.get(
@@ -23,14 +23,14 @@ async def list_links(
     responses={status.HTTP_404_NOT_FOUND: {"model": HTTPExceptionSchema}},
 )
 async def get_link(short_code: str, service: ServiceDependency):
-    redirect = await service.get_link(short_code)
-    return redirect
+    link = await service.get_link(short_code)
+    return link
 
 
 @router.post("/", response_model=RedirectLinkSchema)
 async def create_link(new_link: CreateRedirectLinkSchema, service: ServiceDependency):
-    redirect = await service.create_link(new_link.target_url)
-    return redirect
+    link = await service.create_link(new_link.target_url)
+    return link
 
 
 @router.delete(
@@ -39,8 +39,8 @@ async def create_link(new_link: CreateRedirectLinkSchema, service: ServiceDepend
     responses={status.HTTP_404_NOT_FOUND: {"model": HTTPExceptionSchema}},
 )
 async def delete_link(short_code: str, service: ServiceDependency):
-    redirect = await service.delete_link(short_code)
-    return redirect
+    link = await service.delete_link(short_code)
+    return link
 
 
 @router.put(
@@ -49,5 +49,5 @@ async def delete_link(short_code: str, service: ServiceDependency):
     responses={status.HTTP_404_NOT_FOUND: {"model": HTTPExceptionSchema}},
 )
 async def toggle_active(short_code: str, service: ServiceDependency):
-    redirect = await service.toggle_active(short_code)
-    return redirect
+    link = await service.toggle_active(short_code)
+    return link

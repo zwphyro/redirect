@@ -24,9 +24,11 @@ class UnitOfWork:
         exc_val: BaseException | None,
         exc_tb: TracebackType | None,
     ):
-        if exc_type is not None:
-            await self.rollback()
-        await self.close()
+        try:
+            if exc_type is not None:
+                await self.rollback()
+        finally:
+            await self.close()
 
     async def commit(self):
         try:

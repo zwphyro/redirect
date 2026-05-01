@@ -26,8 +26,11 @@ class AuthService:
 
         password_hash = self._password_hash.hash(password)
 
-        await self._uow.auth.create_user(email, password_hash)
-        await self._uow.commit()
+        try:
+            await self._uow.auth.create_user(email, password_hash)
+            await self._uow.commit()
+        except Exception:
+            await self._uow.rollback()
 
     async def login(self, email: str, password: str):
         user = await self._uow.auth.get_user_by_email(email)
@@ -53,7 +56,7 @@ class AuthService:
             raise InvalidPayloadError("Can't decode access token")
 
         if payload.exp is None or payload.exp < datetime.now(timezone.utc):
-            raise TokenExpiredError("Token epired")
+            raise TokenExpiredError("Token expired")
 
         user_id = payload.sub
         user = await self._uow.auth.get_user_by_id(int(user_id))
@@ -70,7 +73,7 @@ class AuthService:
             raise InvalidPayloadError("Can't decode access token")
 
         if payload.exp is None or payload.exp < datetime.now(timezone.utc):
-            raise TokenExpiredError("Token epired")
+            raise TokenExpiredError("Token expired")
 
         user_id = payload.sub
         user = await self._uow.auth.get_user_by_id(int(user_id))
