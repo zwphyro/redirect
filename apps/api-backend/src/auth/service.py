@@ -30,7 +30,8 @@ class AuthService:
             await self._uow.auth.create_user(email, password_hash)
             await self._uow.commit()
         except Exception:
-            await self._uow.rollback()
+            # INFO: explicitly ignore if failed to create user
+            return
 
     async def login(self, email: str, password: str):
         user = await self._uow.auth.get_user_by_email(email)
