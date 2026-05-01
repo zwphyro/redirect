@@ -4,7 +4,7 @@
 
 **Purpose:** REST API for managing redirect links (CRUD operations).
 
-**Technology:** Python 3.13, FastAPI, SQLAlchemy 2.0, Alembic
+**Technology:** Python 3.13, FastAPI, SQLAlchemy 2.0, Alembic, PyJWT, pwdlib
 
 **Port:** 8000
 
@@ -14,6 +14,7 @@
 
 - Create, read, update, delete redirect links
 - Generate unique short codes
+- JWT-based user authentication (register, login, refresh tokens)
 - Provide OpenAPI specification for frontend
 - Database migrations via Alembic
 
@@ -24,16 +25,22 @@
 **Architecture:** Layered architecture with FastAPI:
 - `src/` - Application code
 - `src/redirect_link/` - Domain module for redirect links
+- `src/auth/` - Domain module for authentication and JWT
+- `src/exception_registry.py` - Automatic exception handler registration
 - `migrations/` - Alembic database migrations
+- `cmd/` - Application entry point
 
 **Key Files:**
-- `src/main.py` - FastAPI application setup
+- `src/main.py` - FastAPI application setup and exception registry wiring
+- `cmd/run.py` - Uvicorn runner with CLI argument parsing
 - `src/api.py` - Router aggregation
+- `src/exception_registry.py` - Declarative exception-to-status-code registry
 - `src/<domain>/routes.py` - API endpoints
 - `src/<domain>/service.py` - Business logic
 - `src/<domain>/models.py` - SQLAlchemy models
 - `src/<domain>/repository.py` - Data access
 - `src/<domain>/schemas.py` - Pydantic schemas
+- `src/unit_of_work.py` - Transaction boundary management
 - `src/db.py` - Database engine and session
 
 **Explore the codebase:**
@@ -54,6 +61,8 @@ ls apps/api-backend/migrations/versions/
 - **asyncpg** - Async PostgreSQL driver
 - **Alembic** - Database migrations
 - **Pydantic Settings** - Configuration management
+- **PyJWT** - JWT token encoding/decoding
+- **pwdlib** - Password hashing (Argon2)
 
 ---
 
@@ -68,6 +77,12 @@ Environment variables (see root `.env.example`):
 | `POSTGRES_DB` | Database name |
 | `POSTGRES_USER` | Database user |
 | `POSTGRES_PASSWORD` | Database password |
+| `BACKEND_HOST` | API server host (default: `0.0.0.0`) |
+| `BACKEND_PORT` | API server port (default: `8000`) |
+| `BACKEND_JWT_ALGORITHM` | JWT algorithm (e.g., `HS256`) |
+| `BACKEND_JWT_SECRET_KEY` | JWT signing secret |
+| `BACKEND_ACCESS_TOKEN_EXPIRE_MINUTES` | Access token TTL in minutes |
+| `BACKEND_REFRESH_TOKEN_EXPIRE_DAYS` | Refresh token TTL in days |
 
 ---
 
@@ -102,11 +117,11 @@ uv run task migrate-check-history
 ### Start the Service
 
 ```bash
-# Development (with auto-reload)
-uv run task start-dev
-
-# Production
+# Production mode
 uv run task start
+
+# Development mode (with auto-reload)
+uv run task start --dev
 ```
 
 The API will be available at http://localhost:8000
@@ -116,19 +131,51 @@ The API will be available at http://localhost:8000
 - ReDoc: http://localhost:8000/redoc
 - OpenAPI JSON: http://localhost:8000/openapi.json
 
+**Launch details:**
+- Entry point: `cmd/run.py` parses CLI arguments and starts Uvicorn
+- `--dev` flag enables hot reload via Uvicorn
+- Configuration is loaded from root `.env` via Pydantic Settings
+
+---
+
+## Exception Registry
+
+The service uses a declarative `ExceptionRegistry` that maps custom exceptions to HTTP status codes. Exception classes decorated with `@ExceptionRegistry.register(<status_code>)` automatically receive a JSON response handler applied to the FastAPI app via `ExceptionRegistry.apply(app)`.
+
+**Example:**
+```python
+# src/exceptions.py
+from fastapi import status
+from src.exception_registry import ExceptionRegistry
+
+@ExceptionRegistry.register(status.HTTP_404_NOT_FOUND)
+class NotFoundError(Exception): ...
+```
+
 ---
 
 ## API Endpoints
 
 **Base URL:** `/api/v1`
 
+### Redirect Links
+
+| Method | Endpoint | Response Model |
+|--------|----------|-------------|
+| GET | `/redirect_links` | `list[RedirectLinkSchema]` |
+| POST | `/redirect_links` | `RedirectLinkSchema` |
+| GET | `/redirect_links/{short_code}` | `RedirectLinkSchema` |
+| PUT | `/redirect_links/active/{short_code}` | `RedirectLinkSchema` |
+| DELETE | `/redirect_links/{short_code}` | `RedirectLinkSchema` |
+
+### Authentication
+
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/redirect_links` | List all redirect links |
-| POST | `/redirect_links` | Create new redirect link |
-| GET | `/redirect_links/{id}` | Get specific link by ID |
-| PUT | `/redirect_links/{id}` | Update redirect link |
-| DELETE | `/redirect_links/{id}` | Delete redirect link |
+| POST | `/auth/register` | Register new user (silent if email already exists) |
+| POST | `/auth/login` | Login and receive JWT access + refresh tokens |
+| POST | `/auth/refresh` | Refresh token pair |
+| GET | `/auth/me` | Get current authenticated user (requires Bearer token) |
 
 **For current schemas and examples, see the live OpenAPI docs at `/docs` when the service is running.**
 
@@ -136,20 +183,18 @@ The API will be available at http://localhost:8000
 
 ## Database Schema
 
-**Core Table:** `redirect_links`
-
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| id | UUID | PRIMARY KEY | Unique identifier |
-| short_code | VARCHAR | UNIQUE, NOT NULL | Short URL code |
-| target_url | VARCHAR | NOT NULL | Destination URL |
-| is_active | BOOLEAN | DEFAULT TRUE | Link status |
-| created_at | TIMESTAMP | NOT NULL | Creation time |
-| updated_at | TIMESTAMP | NOT NULL | Last update time |
+**View current tables:**
+```bash
+# Redirect links table
+docker compose exec postgres psql -U $POSTGRES_USER -d $POSTGRES_DB -c "\d"
+```
 
 **View current schema:**
 ```bash
-docker compose exec postgres psql -U $POSTGRES_USER -d $POSTGRES_DB -c "\d redirect_links"
+docker compose exec postgres psql -U $POSTGRES_USER -d $POSTGRES_DB -c "\d <table_name>"
+
+# For example:
+docker compose exec postgres psql -U $POSTGRES_USER -d $POSTGRES_DB -c "\d users"
 ```
 
 ---
@@ -163,7 +208,7 @@ docker compose exec postgres psql -U $POSTGRES_USER -d $POSTGRES_DB -c "\d redir
 uv run task list
 
 # Common tasks
-uv run task start-dev                       # Run with auto-reload
+uv run task start                           # Run production server
 uv run task migrate-to-head                 # Apply migrations
 uv run task migrate-revision "description"  # Create migration
 uv run task lint                            # Run linter
@@ -192,7 +237,10 @@ uv run task migrate-to-head
 2. Implement logic in `src/<domain>/service.py`
 3. Add repository methods if needed in `src/<domain>/repository.py`
 4. Update schemas if needed in `src/<domain>/schemas.py`
-5. Regenerate frontend types: `cd apps/frontend && npm run openapi:update`
+5. Register new domain exceptions using decorator `@ExceptionRegistry.register(status.HTTP_XXX)`
+6. Create new models in `src/<domain>/models.py` and import them in `src/models.py`
+7. Include new router in `src/api.py`
+8. Regenerate frontend types: `cd apps/frontend && npm run openapi:update`
 
 ---
 
@@ -213,7 +261,7 @@ uv run task test-coverage
 ### Database connection errors
 - Check `POSTGRES_*` environment variables in `.env`
 - Verify PostgreSQL is running: `docker compose ps postgres`
-- Test connection: `uv run python -c "import asyncio; from src.db import async_session; asyncio.run(async_session())"`
+- Test connection: `uv run python -c "import asyncio; from src.db import AsyncSessionLocal; asyncio.run(AsyncSessionLocal())"`
 
 ### Migration errors
 - Check if database exists
@@ -223,6 +271,17 @@ uv run task test-coverage
 ### Import errors
 - Ensure you're running from `apps/api-backend` directory
 - Check virtual environment: `uv run python --version`
+
+### Service won't start (ValidationError)
+- Check that all required environment variables are set in root `.env`:
+  - `BACKEND_HOST`, `BACKEND_PORT`
+  - `BACKEND_JWT_SECRET_KEY`, `BACKEND_JWT_ALGORITHM`
+  - `BACKEND_ACCESS_TOKEN_EXPIRE_MINUTES`, `BACKEND_REFRESH_TOKEN_EXPIRE_DAYS`
+
+### Token errors
+- Verify `BACKEND_JWT_SECRET_KEY` is set and secure
+- Check that `BACKEND_JWT_ALGORITHM` matches (default: `HS256`)
+- Ensure system clock is correct (tokens are time-sensitive)
 
 ---
 
