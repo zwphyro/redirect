@@ -1,8 +1,13 @@
 from functools import lru_cache
 import os
+from pathlib import Path
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+PROJECT_ROOT = BASE_DIR.parent.parent
 
 
 class Settings(BaseSettings):
@@ -14,6 +19,7 @@ class Settings(BaseSettings):
 
     host: str = Field(..., alias="BACKEND_HOST")
     port: int = Field(..., alias="BACKEND_PORT")
+    log_level: str = Field(..., alias="BACKEND_LOG_LEVEL")
     jwt_algorithm: str = Field(..., alias="BACKEND_JWT_ALGORITHM")
     jwt_secret_key: str = Field(..., alias="BACKEND_JWT_SECRET_KEY")
     access_token_expire_minutes: int = Field(
@@ -24,9 +30,7 @@ class Settings(BaseSettings):
     )
 
     model_config = SettingsConfigDict(
-        env_file=os.path.join(
-            os.path.abspath(os.path.dirname(__file__)), "..", "..", "..", ".env"
-        ),
+        env_file=os.path.join(PROJECT_ROOT / ".env"),
         extra="ignore",
     )
 
