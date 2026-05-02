@@ -19,13 +19,18 @@ dependencies = [
 [dependency-groups]
 dev = [
     "pytest>=9.0.2",
+    "pytest-asyncio>=1.3.0",
     "pytest-cov>=7.0.0",
     "ruff>=0.15.6",
     "taskipy>=1.14.1",
 ]
 
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["test"]
+
 [tool.taskipy.tasks]
-start = "python -m cmd.run"
+start = "python -m command.run"
 
 migrate-to-head = "alembic upgrade head"
 migrate-to = "alembic upgrade"
@@ -34,9 +39,9 @@ migrate-revision = "alembic revision --autogenerate -m"
 migrate-check-current = "alembic current"
 migrate-check-history = "alembic history"
 
-lint = "ruff check src tests"
-lint-fix = "ruff check src tests --fix"
-test = "pytest tests"
-test-coverage = "pytest --cov=src tests && coverage html"
+lint = "ruff check src test"
+lint-fix = "ruff check src test --fix"
+test = "pytest -v"
+test-coverage = "pytest --cov && coverage html"
 
 list = "task --list"

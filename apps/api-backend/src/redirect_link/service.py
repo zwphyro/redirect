@@ -1,6 +1,10 @@
+import logging
+
 from src.redirect_link.short_code import ShortCodeGenerator
 from src.unit_of_work import UnitOfWork
 from src.exceptions import DatabaseError, NotFoundError
+
+log = logging.getLogger(__name__)
 
 
 class RedirectLinkService:
@@ -43,6 +47,7 @@ class RedirectLinkService:
                 await self._uow.rollback()
                 continue
 
+        log.error(f"Failed to generate unique short code after {max_attempts} attempts")
         raise RuntimeError("Failed to generate unique short code")
 
     async def delete_link(self, short_code: str, user_id: int):
