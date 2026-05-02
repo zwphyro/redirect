@@ -12,26 +12,29 @@ class RedirectLinkService:
         self._uow = uow
         self._short_code_generator = short_code_generator
 
-    async def list(self, *, limit: int | None = None, offset: int | None = None):
-        return await self._uow.redirect_link.list(limit=limit, offset=offset)
+    async def list(
+        self, user_id: int, *, limit: int | None = None, offset: int | None = None
+    ):
+        return await self._uow.redirect_link.list(user_id, limit=limit, offset=offset)
 
-    async def get_link(self, short_code: str):
-        link = await self._uow.redirect_link.get_by_short_code(short_code)
+    async def get_link(self, short_code: str, user_id: int):
+        link = await self._uow.redirect_link.get_by_short_code(short_code, user_id)
 
         if link is None:
             raise NotFoundError("Redirect link not found")
 
         return link
 
-    async def create_link(self, target_url: str):
+    async def create_link(self, target_url: str, user_id: int):
         max_attempts = 10
 
         for _ in range(max_attempts):
             try:
                 short_code = self._short_code_generator.generate()
                 link = await self._uow.redirect_link.create(
-                    short_code=short_code,
-                    target_url=target_url,
+                    short_code,
+                    target_url,
+                    user_id,
                 )
                 await self._uow.commit()
 
@@ -42,17 +45,18 @@ class RedirectLinkService:
 
         raise RuntimeError("Failed to generate unique short code")
 
-    async def delete_link(self, short_code: str):
-        link = await self._uow.redirect_link.delete(short_code)
+    async def delete_link(self, short_code: str, user_id: int):
+        link = await self._uow.redirect_link.delete_by_short_code(short_code, user_id)
 
         if link is None:
             raise NotFoundError("Redirect link not found")
 
         await self._uow.commit()
+
         return link
 
-    async def toggle_active(self, short_code: str):
-        link = await self._uow.redirect_link.get_by_short_code(short_code)
+    async def toggle_active(self, short_code: str, user_id: int):
+        link = await self._uow.redirect_link.get_by_short_code(short_code, user_id)
 
         if link is None:
             raise NotFoundError("Redirect link not found")

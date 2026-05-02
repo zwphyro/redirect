@@ -41,7 +41,7 @@ def get_auth_service(
 ServiceDependency = Annotated[AuthService, Depends(get_auth_service)]
 
 
-async def get_current_user(
+async def authenticate(
     auth: Annotated[HTTPAuthorizationCredentials, Depends(HTTPBearer())],
     service: ServiceDependency,
 ):
@@ -49,4 +49,4 @@ async def get_current_user(
     return user
 
 
-UserDependency = Annotated[User, Depends(get_current_user)]
+UserDependency = Annotated[User, Depends(authenticate)]
