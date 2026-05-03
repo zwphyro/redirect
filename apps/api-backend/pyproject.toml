@@ -41,7 +41,7 @@ migrate-check-history = "alembic history"
 
 lint = "ruff check src test"
 lint-fix = "ruff check src test --fix"
-test = "pytest -v"
-test-coverage = "pytest --cov && coverage html"
+test = "pytest test -v"
+test-coverage = "pytest test --cov=src && coverage html"
 
 list = "task --list"
