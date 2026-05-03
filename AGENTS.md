@@ -299,6 +299,10 @@ cd apps/analytics && uv run clickhouse-migrations migrate
 - Verify Docker containers are running: `docker compose ps`
 - Check logs: `docker compose logs <service>`
 
+### Provided Commands Don't Work
+- For Python tasks try runngin full command as Python module, e.g. `uv run task migrate-to-head` -> `uv run python -m alembic revision --autogenerate`
+- Try using full paths for executables
+
 ### Database Connection Errors
 - Verify PostgreSQL is healthy: `docker compose ps postgres`
 - Check credentials in `.env`

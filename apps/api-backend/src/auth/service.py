@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import logging
 from pwdlib import PasswordHash
 from src.auth.exceptions import (
     IncorrectLoginOrPasswordError,
@@ -9,6 +10,8 @@ from src.auth.exceptions import (
 from src.auth.schemas import AccessTokenPayload, RefreshTokenPayload
 from src.auth.token import Token
 from src.unit_of_work import UnitOfWork
+
+log = logging.getLogger(__name__)
 
 
 class AuthService:
@@ -22,6 +25,7 @@ class AuthService:
 
         if user is not None:
             # INFO: explicitly ignore if user already exists
+            log.warning(f"User with email {email} already exists")
             return
 
         password_hash = self._password_hash.hash(password)
@@ -31,6 +35,7 @@ class AuthService:
             await self._uow.commit()
         except Exception:
             # INFO: explicitly ignore if failed to create user
+            log.warning(f"Failed to create user with email {email}")
             return
 
     async def login(self, email: str, password: str):

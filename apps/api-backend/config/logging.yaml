@@ -1,0 +1,25 @@
+version: 1
+disable_existing_loggers: false
+
+handlers:
+  console:
+    class: rich.logging.RichHandler
+    level: DEBUG
+    rich_tracebacks: true
+    markup: true
+    show_path: false
+
+loggers:
+  src:
+    level: INFO
+    handlers: [console]
+    propagate: false
+
+  __main__:
+    level: INFO 
+    handlers: [console]
+    propagate: false
+
+root:
+  level: INFO
+  handlers: [console]
