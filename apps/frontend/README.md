@@ -116,10 +116,10 @@ npm run openapi:generate-types
 ### API Client Usage
 
 ```typescript
-import { client } from "@/lib/api/client";
+import { fetchClient } from "@/lib/api/client";
 
 // Type-safe API call
-const { data } = await client.GET("/redirect_links/");
+const { data, error } = await fetchClient.GET("/redirect_links/");
 ```
 
 ### React Query Integration
@@ -154,6 +154,8 @@ return (
 
 ```typescript
 // Get perfetched data in a client component
+"use client";
+
 import { client } from "@/lib/api/client";
 
 const { data, error } = client.useQuery("get", "/redirect_links/", {

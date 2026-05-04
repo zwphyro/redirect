@@ -84,6 +84,7 @@ export default defineConfig([
       'react/forward-ref-uses-ref': 'error',
       'react/no-array-index-key': 'warn',
       'react/jsx-tag-spacing': ['error', { 'beforeSelfClosing': 'always' }],
+      'react/no-children-prop': 'off',
 
       // --- Styling ---
       '@stylistic/semi': ['error', 'always'],

@@ -4,7 +4,7 @@ import { Stack } from "@/components/ui/layout";
 import { client } from "@/lib/api/client";
 
 
-const RootPage = () => {
+const HydratedChild = () => {
   const { data, error, isLoading } = client.useQuery("get", "/auth/me");
   console.log(data, error, isLoading);
   if (isLoading) {
@@ -18,4 +18,4 @@ const RootPage = () => {
   );
 };
 
-export default RootPage;
+export default HydratedChild;
