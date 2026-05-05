@@ -1,13 +1,14 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
-import { fetchClient } from "@/lib/api/client";
 import { cookiesConfig } from "@/lib/api/cookies";
+import { createServerClient } from "@/lib/api/server-client";
 
 interface T { email: string; password: string }
 
 const POST = async (request: Request) => {
   const body: T = await request.json() as never as T;
+  const { fetchClient } = await createServerClient();
   const { data, error, response } = await fetchClient.POST("/auth/login", { body });
 
   if (error) {

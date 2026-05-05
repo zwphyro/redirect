@@ -1,30 +1,37 @@
 "use client";
 
 import { useForm } from "@tanstack/react-form";
+import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Stack } from "@/components/ui/layout";
+import { client } from "@/lib/api/client";
 
-const RegisterForm = () => {
+const AuthForm = () => {
+  const router = useRouter();
+
+  const { mutate, isPending } = client.useMutation("post", "/auth/login", {
+    onSuccess: () => {
+      router.push("/");
+    },
+  });
+
   const form = useForm({
     defaultValues: {
       email: "",
       password: "",
     },
-    onSubmit: (event) => {
-      console.log(event);
-      const email = event.value.email;
-      const password = event.value.password;
-      void fetch("api/auth/login", { method: "POST", body: JSON.stringify({ email, password }) });
+    onSubmit: ({ value }) => {
+      mutate({ body: value });
     },
   });
 
   return (
     <Stack className="gap-2">
       <form
-        id="register-form"
+        id="login-form"
         onSubmit={(event: React.SubmitEvent) => {
           event.preventDefault();
           void form.handleSubmit();
@@ -80,10 +87,16 @@ const RegisterForm = () => {
         </FieldGroup>
       </form>
       <Field>
-        <Button type="submit" form="register-form">Register</Button>
+        <Button
+          type="submit"
+          form="login-form"
+          disabled={isPending}
+        >
+          Login
+        </Button>
       </Field>
     </Stack>
   );
 };
 
-export default RegisterForm;
+export default AuthForm;
