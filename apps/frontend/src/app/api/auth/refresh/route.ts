@@ -1,8 +1,8 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
+import { getServerClient } from "@/lib/api/client";
 import { cookiesConfig } from "@/lib/api/cookies";
-import { createServerClient } from "@/lib/api/server-client";
 
 const POST = async () => {
   const cookieStore = await cookies();
@@ -12,7 +12,7 @@ const POST = async () => {
     return NextResponse.json({ error: "No refresh token" }, { status: 401 });
   }
 
-  const { fetchClient } = await createServerClient();
+  const { fetchClient } = await getServerClient();
 
   const { data, error, response } = await fetchClient.POST("/auth/refresh", {
     body: { refresh_token: refreshToken },

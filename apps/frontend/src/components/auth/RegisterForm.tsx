@@ -6,10 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Stack } from "@/components/ui/layout";
-import { client } from "@/lib/api/client";
+import { useClient } from "@/lib/api/client";
 
 const RegisterForm = () => {
+  const { client } = useClient();
   const { mutate } = client.useMutation("post", "/auth/register");
+
   const form = useForm({
     defaultValues: {
       email: "",

@@ -7,10 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Stack } from "@/components/ui/layout";
-import { client } from "@/lib/api/client";
+import { useClient } from "@/lib/api/client";
 
 const AuthForm = () => {
   const router = useRouter();
+  const { client } = useClient();
 
   const { mutate, isPending } = client.useMutation("post", "/auth/login", {
     onSuccess: () => {
