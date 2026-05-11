@@ -5,29 +5,24 @@ import { useForm } from "@tanstack/react-form";
 import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { useClient } from "@/lib/api/client";
+import { useLogin } from "@/lib/api/auth";
 
-const RegisterForm = () => {
-  const { client } = useClient();
-  const { mutate } = client.useMutation("post", "/auth/register");
+const LoginForm = () => {
+  const { mutate, isPending, error: loginError } = useLogin();
 
   const form = useForm({
     defaultValues: {
       email: "",
       password: "",
-      repeatPassword: "",
     },
-    onSubmit: (event) => {
-      console.log(event);
-      const email = event.value.email;
-      const password = event.value.password;
-      mutate({ body: { email, password } });
+    onSubmit: ({ value }) => {
+      void mutate(value);
     },
   });
 
   return (
     <form
-      id="register-form"
+      id="login-form"
       onSubmit={(event: React.SubmitEvent) => {
         event.preventDefault();
         void form.handleSubmit();
@@ -50,7 +45,7 @@ const RegisterForm = () => {
                   onChange={(e) => { field.handleChange(e.target.value); }}
                   aria-invalid={isInvalid}
                   placeholder="me@example.com"
-                  autoComplete="false"
+                  autoComplete="email"
                 />
                 {isInvalid ? <FieldError>{field.state.meta.errors}</FieldError> : null}
               </Field>
@@ -60,7 +55,7 @@ const RegisterForm = () => {
         <form.Field
           name="password"
           children={(field) => {
-            const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+            const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid || !!loginError;
             return (
               <Field data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>Password</FieldLabel>
@@ -73,42 +68,28 @@ const RegisterForm = () => {
                   onChange={(e) => { field.handleChange(e.target.value); }}
                   aria-invalid={isInvalid}
                   placeholder="********"
-                  autoComplete="false"
+                  autoComplete="current-password"
                 />
-                {isInvalid ? <FieldError>{field.state.meta.errors}</FieldError> : null}
-              </Field>
-            );
-          }}
-        />
-        <form.Field
-          name="repeatPassword"
-          children={(field) => {
-            const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-            return (
-              <Field data-invalid={isInvalid}>
-                <FieldLabel htmlFor={field.name}>Repeat Password</FieldLabel>
-                <Input
-                  id={field.name}
-                  name={field.name}
-                  type="password"
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => { field.handleChange(e.target.value); }}
-                  aria-invalid={isInvalid}
-                  placeholder="********"
-                  autoComplete="false"
-                />
-                {isInvalid ? <FieldError>{field.state.meta.errors}</FieldError> : null}
+                {isInvalid ?
+                  <FieldError>
+                    {field.state.meta.errors.length ? field.state.meta.errors : loginError}
+                  </FieldError> : null}
               </Field>
             );
           }}
         />
         <Field>
-          <Button type="submit" form="register-form">Register</Button>
+          <Button
+            type="submit"
+            form="login-form"
+            disabled={isPending}
+          >
+            Login
+          </Button>
         </Field>
       </FieldGroup>
     </form>
   );
 };
 
-export default RegisterForm;
+export default LoginForm;

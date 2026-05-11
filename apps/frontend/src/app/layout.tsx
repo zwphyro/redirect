@@ -21,11 +21,13 @@ const metadata: Metadata = {
   title: "Redirect",
 };
 
+interface RootLayoutProps {
+  children: React.ReactNode
+}
+
 const RootLayout = ({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) => {
+}: RootLayoutProps) => {
   return (
     <html
       lang="en"
