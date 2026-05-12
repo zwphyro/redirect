@@ -1,22 +1,34 @@
 "use client";
 
 import { useForm } from "@tanstack/react-form";
+import { useRouter } from "next/navigation";
+import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { useLogin } from "@/lib/api/auth";
+import { default as loginContent } from "@/lib/content/auth/login";
+
+const loginSchema = z.object({
+  email: z.email(loginContent.emailInvalid as string),
+  password: z.string().min(8, loginContent.passwordTooShort),
+});
 
 const LoginForm = () => {
-  const { mutate, isPending, error: loginError } = useLogin();
+  const router = useRouter();
+  const { mutate, isPending, error: loginError, reset } = useLogin();
 
   const form = useForm({
     defaultValues: {
       email: "",
       password: "",
     },
+    validators: { onChange: loginSchema },
     onSubmit: ({ value }) => {
-      void mutate(value);
+      void mutate(value, {
+        onSuccess: () => { router.push("/"); },
+      });
     },
   });
 
@@ -32,22 +44,24 @@ const LoginForm = () => {
         <form.Field
           name="email"
           children={(field) => {
-            const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+            const isInvalid =
+              field.state.meta.isTouched && !field.state.meta.isValid || !!loginError;
             return (
               <Field data-invalid={isInvalid}>
-                <FieldLabel htmlFor={field.name}>Email</FieldLabel>
+                <FieldLabel htmlFor={field.name}>{loginContent.email}</FieldLabel>
                 <Input
                   id={field.name}
                   name={field.name}
                   type="email"
                   value={field.state.value}
                   onBlur={field.handleBlur}
+                  onFocus={reset}
                   onChange={(e) => { field.handleChange(e.target.value); }}
                   aria-invalid={isInvalid}
-                  placeholder="me@example.com"
+                  placeholder={loginContent.emailPlaceholder}
                   autoComplete="email"
                 />
-                {isInvalid ? <FieldError>{field.state.meta.errors}</FieldError> : null}
+                {isInvalid ? <FieldError>{field.state.meta.errors[0]?.message}</FieldError> : null}
               </Field>
             );
           }}
@@ -55,24 +69,26 @@ const LoginForm = () => {
         <form.Field
           name="password"
           children={(field) => {
-            const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid || !!loginError;
+            const isInvalid =
+              field.state.meta.isTouched && !field.state.meta.isValid || !!loginError;
             return (
               <Field data-invalid={isInvalid}>
-                <FieldLabel htmlFor={field.name}>Password</FieldLabel>
+                <FieldLabel htmlFor={field.name}>{loginContent.password}</FieldLabel>
                 <Input
                   id={field.name}
                   name={field.name}
                   type="password"
                   value={field.state.value}
                   onBlur={field.handleBlur}
+                  onFocus={reset}
                   onChange={(e) => { field.handleChange(e.target.value); }}
                   aria-invalid={isInvalid}
-                  placeholder="********"
+                  placeholder={loginContent.passwordPlaceholder}
                   autoComplete="current-password"
                 />
                 {isInvalid ?
                   <FieldError>
-                    {field.state.meta.errors.length ? field.state.meta.errors : loginError}
+                    {field.state.meta.errors.length ? field.state.meta.errors[0]?.message : loginError}
                   </FieldError> : null}
               </Field>
             );
@@ -84,7 +100,7 @@ const LoginForm = () => {
             form="login-form"
             disabled={isPending}
           >
-            Login
+            {loginContent.login}
           </Button>
         </Field>
       </FieldGroup>

@@ -4,15 +4,18 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 
+import { default as loginContent } from "@/lib/content/auth/login";
+
 import type { components } from "./v1";
 
 type LoginBody = components["schemas"]["LoginUserSchema"];
 type LoginResponse = components["schemas"]["TokenPairSchema"];
 type HttpError = components["schemas"]["HTTPExceptionSchema"];
+type ValidationError = components["schemas"]["HTTPValidationError"];
 
 type AuthResult =
   | { ok: true; data: LoginResponse }
-  | { ok: false; error: HttpError | string; status: number };
+  | { ok: false; error: HttpError | ValidationError | string; status: number };
 
 const postLogin = async (body: LoginBody): Promise<AuthResult> => {
   const response = await fetch("/api/auth/login", {
@@ -31,7 +34,6 @@ const postLogin = async (body: LoginBody): Promise<AuthResult> => {
 };
 
 const useLogin = () => {
-  const router = useRouter();
   const queryClient = useQueryClient();
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -50,19 +52,23 @@ const useLogin = () => {
       if (result.ok) {
         queryClient.removeQueries({ queryKey: ["get", "/auth/me"] });
         options?.onSuccess?.();
-        router.push("/");
       } else {
-        const msg = typeof result.error === "string" ? result.error : result.error.detail;
-        setError(msg);
-        options?.onError?.(msg);
+        const message = loginContent.getErrorMessage(result.status);
+        setError(message);
+        options?.onError?.(message);
       }
 
       return result;
     },
-    [queryClient, router],
+    [queryClient],
   );
 
-  return { mutate, isPending, error };
+  const reset = () => {
+    setIsPending(false);
+    setError(null);
+  };
+
+  return { mutate, isPending, error, reset };
 };
 
 const postLogout = async () => {
