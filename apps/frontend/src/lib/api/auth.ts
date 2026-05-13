@@ -1,7 +1,6 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 
 import { default as loginContent } from "@/lib/content/auth/login";
@@ -77,7 +76,6 @@ const postLogout = async () => {
 };
 
 const useLogout = () => {
-  const router = useRouter();
   const queryClient = useQueryClient();
 
   const mutate = useCallback(
@@ -85,9 +83,8 @@ const useLogout = () => {
       await postLogout();
       queryClient.removeQueries({ queryKey: ["get", "/auth/me"] });
       options?.onSuccess?.();
-      router.push("/auth/login");
     },
-    [queryClient, router],
+    [queryClient],
   );
 
   return { mutate };

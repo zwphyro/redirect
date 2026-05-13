@@ -3,10 +3,10 @@ import "./globals.css";
 import type { Metadata } from "next";
 import { Geist_Mono, Inter } from "next/font/google";
 
-import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuAction, SidebarMenuBadge, SidebarMenuButton, SidebarMenuItem, SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem, SidebarRail } from "@/components/ui/sidebar";
+import { RootProviders } from "@/app/providers";
+import { ApplicationSidebar } from "@/components/sidebar/application-sidebar";
+import { Box } from "@/components/ui/layout";
 import { cn } from "@/lib/utils";
-
-import { Providers } from "./providers";
 
 const inter = Inter({
   variable: "--font-sans",
@@ -36,24 +36,12 @@ const RootLayout = ({
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
-        <Providers>
-          <Sidebar>
-            <SidebarHeader>
-            </SidebarHeader>
-            <SidebarContent>
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton />
-                  <SidebarMenuBadge>12</SidebarMenuBadge>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarContent>
-            <SidebarFooter>
-            </SidebarFooter>
-            <SidebarRail></SidebarRail>
-          </Sidebar>
-          {children}
-        </Providers>
+        <RootProviders>
+          <ApplicationSidebar />
+          <Box className="flex-1">
+            {children}
+          </Box>
+        </RootProviders>
       </body>
     </html>
   );

@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 
-import LoginForm from "@/components/auth/LoginForm";
+import { LoginForm } from "@/components/auth/login-form";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { default as loginContent } from "@/lib/content/auth/login";

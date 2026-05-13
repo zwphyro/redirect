@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 
-import RegisterForm from "@/components/auth/RegisterForm";
+import { RegisterForm } from "@/components/auth/register-form";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { default as registerContent } from "@/lib/content/auth/register";

@@ -5,20 +5,27 @@ import { ThemeProvider } from "@/components/themes/theme-provider";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { getQueryClient } from "@/lib/api/query-client";
+import { AuthProvider } from "@/providers/auth-provider";
 
-const Providers = ({ children }: { children: React.ReactNode }) => {
+interface RootProvidersProps {
+  children: React.ReactNode;
+}
+
+const RootProviders = ({ children }: RootProvidersProps) => {
   const queryClient = getQueryClient();
   return (
-    <ThemeProvider>
-      <QueryClientProvider client={queryClient}>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
         <TooltipProvider>
           <SidebarProvider>
-            {children}
+            <AuthProvider>
+              {children}
+            </AuthProvider>
           </SidebarProvider>
         </TooltipProvider>
-      </QueryClientProvider>
-    </ThemeProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
   );
 };
 
-export { Providers };
+export { RootProviders };

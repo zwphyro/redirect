@@ -44,11 +44,16 @@ const createBrowserClientSingleton = () => {
   const fetchClient = createFetchClient<paths>({ baseUrl: BROWSER_BASE_URL });
 
   let refreshPromise: Promise<boolean> | null = null;
+  let refreshFailed = false;
 
   fetchClient.use({
     async onResponse({ response, request, options }) {
-      if (response.status === 401) {
-        refreshPromise ??= fetch("/api/auth/refresh", { method: "POST" }).then((r) => r.ok);
+      if (response.status === 401 && !refreshFailed) {
+        refreshPromise ??= fetch("/api/auth/refresh", { method: "POST" })
+          .then((r) => {
+            if (!r.ok) refreshFailed = true;
+            return r.ok;
+          });
 
         const isSuccess = await refreshPromise;
         refreshPromise = null;
@@ -56,7 +61,6 @@ const createBrowserClientSingleton = () => {
         if (isSuccess) {
           return fetch(request.url, options as RequestInit);
         }
-        window.location.href = "/auth/login";
       }
       return response;
     },
