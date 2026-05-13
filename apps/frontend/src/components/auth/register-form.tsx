@@ -108,7 +108,9 @@ const RegisterForm = () => {
                 />
                 {isInvalid ?
                   <FieldError>
-                    {field.state.meta.errors.length ? field.state.meta.errors[0]?.message : registerContent.registerFailedError}
+                    {field.state.meta.errors.length
+                      ? field.state.meta.errors[0]?.message
+                      : registerContent.registerFailedError}
                   </FieldError> : null}
               </Field>
             );

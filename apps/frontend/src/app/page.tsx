@@ -6,10 +6,11 @@ import { useClient } from "@/lib/api/client";
 const RootPage = () => {
   const { client } = useClient();
   const { data, error, isLoading } = client.useQuery("get", "/auth/me");
-  console.log(data, error, isLoading);
+
   if (isLoading) {
     return <div>Loading...</div>;
   }
+
   return (
     <Stack>
       <Stack>{JSON.stringify(data, null, 2)}</Stack>

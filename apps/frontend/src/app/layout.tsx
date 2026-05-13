@@ -3,6 +3,7 @@ import "./globals.css";
 import type { Metadata } from "next";
 import { Geist_Mono, Inter } from "next/font/google";
 
+import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuAction, SidebarMenuBadge, SidebarMenuButton, SidebarMenuItem, SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem, SidebarRail } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 
 import { Providers } from "./providers";
@@ -36,6 +37,21 @@ const RootLayout = ({
     >
       <body className="min-h-full flex flex-col">
         <Providers>
+          <Sidebar>
+            <SidebarHeader>
+            </SidebarHeader>
+            <SidebarContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton />
+                  <SidebarMenuBadge>12</SidebarMenuBadge>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarContent>
+            <SidebarFooter>
+            </SidebarFooter>
+            <SidebarRail></SidebarRail>
+          </Sidebar>
           {children}
         </Providers>
       </body>
