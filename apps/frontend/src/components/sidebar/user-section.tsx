@@ -12,7 +12,7 @@ import { SidebarMenuAction, SidebarMenuButton, SidebarMenuItem, SidebarMenuSkele
 const UserSection = () => {
   const { mutate } = useLogout();
   const router = useRouter();
-  const { state, user } = useAuth();
+  const { state, user, refresh } = useAuth();
 
   if (state === "loading") {
     return (
@@ -46,7 +46,14 @@ const UserSection = () => {
         {user.email}
       </SidebarMenuButton>
       <SidebarMenuAction
-        onClick={() => { void mutate({ onSuccess: () => { router.push("/auth/login"); } }); }}
+        onClick={() => {
+          void mutate({
+            onSuccess: () => {
+              refresh();
+              router.push("/auth/login");
+            },
+          });
+        }}
       >
         <LogOutIcon />
       </SidebarMenuAction>

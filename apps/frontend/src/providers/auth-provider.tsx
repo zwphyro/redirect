@@ -7,13 +7,14 @@ import type { components } from "@/lib/api/v1";
 
 type User = components["schemas"]["UserSchema"];
 type AuthContextValue =
-  | { state: "loading", user: null; }
-  | { state: "unauthenticated", user: null; }
-  | { state: "authenticated", user: User; };
+  | { state: "loading", user: null, refresh: () => void; }
+  | { state: "unauthenticated", user: null, refresh: () => void; }
+  | { state: "authenticated", user: User, refresh: () => void; };
 
 const AuthContext = createContext<AuthContextValue>({
   state: "loading",
   user: null,
+  refresh: () => { return; },
 });
 
 interface AuthProviderProps {
@@ -22,7 +23,7 @@ interface AuthProviderProps {
 
 const AuthProvider = ({ children }: AuthProviderProps) => {
   const { client } = useClient();
-  const { data: user, isError, isLoading } = client.useQuery(
+  const { data: user, isError, isLoading, refetch } = client.useQuery(
     "get",
     "/auth/me",
     {},
@@ -33,13 +34,13 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const value: AuthContextValue = useMemo(() => {
     if (isLoading) {
-      return { state: "loading", user: null };
+      return { state: "loading", user: null, refresh: refetch };
     }
     if (isError || !user) {
-      return { state: "unauthenticated", user: null };
+      return { state: "unauthenticated", user: null, refresh: refetch };
     }
-    return { state: "authenticated", user };
-  }, [isLoading, isError, user]);
+    return { state: "authenticated", user, refresh: refetch };
+  }, [isLoading, refetch, isError, user]);
 
   return (
     <AuthContext.Provider value={value}>

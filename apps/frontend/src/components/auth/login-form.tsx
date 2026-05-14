@@ -7,6 +7,7 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/hooks/use-auth";
 import { useLogin } from "@/lib/api/auth";
 import { default as loginContent } from "@/lib/content/auth/login";
 
@@ -17,6 +18,7 @@ const loginSchema = z.object({
 
 const LoginForm = () => {
   const router = useRouter();
+  const { refresh } = useAuth();
   const { mutate, isPending, error: loginError, reset } = useLogin();
 
   const form = useForm({
@@ -27,7 +29,10 @@ const LoginForm = () => {
     validators: { onChange: loginSchema },
     onSubmit: ({ value }) => {
       void mutate(value, {
-        onSuccess: () => { router.push("/"); },
+        onSuccess: () => {
+          refresh();
+          router.push("/");
+        },
       });
     },
   });
